@@ -39,10 +39,6 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
     private readonly IProgressTimer? _progressTimer;
     private int _progressTimerWired;
 
-    private long _byteCount;
-    private int _currentRowIndex;
-    private int _currentRawRowIndex;
-
 
 
     /// <summary>
@@ -221,7 +217,6 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
                 ? args => callerBadDataFound(ToCsvBadDataInfo(args))
                 : args => CsvLogMessages.BadDataFound(_logger, args.Context.Parser?.RawRow ?? -1, args.Field, args.RawRecord, null),
             Comment = Comment,
-            CountBytes = true,
             Delimiter = Delimiter,
             Escape = Escape,
             Encoding = Encoding,
@@ -235,13 +230,19 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
 
 
 
-    private static CsvBadDataInfo ToCsvBadDataInfo(BadDataFoundArgs args) =>
-        new
+    private static CsvBadDataInfo ToCsvBadDataInfo(BadDataFoundArgs args)
+    {
+        var rawColumnIndex = args.Context.Reader?.CurrentIndex ?? -1;
+        var columnNumber = rawColumnIndex >= 0 ? rawColumnIndex + 1 : -1;
+
+        return new CsvBadDataInfo
         (
             args.Context.Parser?.RawRow ?? -1,
+            columnNumber,
             args.Field,
             args.RawRecord
         );
+    }
 
 
 
@@ -291,7 +292,6 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         await foreach (var record in csvReader.GetRecordsAsync<TRecord>(token).WithCancellation(token).ConfigureAwait(false))
         {
             token.ThrowIfCancellationRequested();
-            UpdateRowSnapshot(csvReader);
 
             if (CurrentItemCount >= MaximumItemCount)
             {
@@ -315,14 +315,12 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         // Skip lines before InitialRecordIndex (1-based).
         while (csvReader.Parser.RawRow < InitialRecordIndex - 1 && await csvReader.ReadAsync().ConfigureAwait(false))
         {
-            UpdateRowSnapshot(csvReader);
             CsvLogMessages.IgnoredRow(_logger, csvReader.Parser.RawRow, null);
         }
 
         // Read the header record if present.
         if (HasHeaderRecord && await csvReader.ReadAsync().ConfigureAwait(false))
         {
-            UpdateRowSnapshot(csvReader);
             csvReader.ReadHeader();
             csvReader.ValidateHeader<TRecord>();
         }
@@ -330,19 +328,9 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         // Honour SkipItemCount.
         while (CurrentSkippedItemCount < SkipItemCount && await csvReader.ReadAsync().ConfigureAwait(false))
         {
-            UpdateRowSnapshot(csvReader);
             IncrementCurrentSkippedItemCount();
             CsvLogMessages.SkippedItem(_logger, CurrentSkippedItemCount, SkipItemCount, null);
         }
-    }
-
-
-
-    private void UpdateRowSnapshot(CsvReader csvReader)
-    {
-        _byteCount = csvReader.Context.Parser?.ByteCount ?? 0;
-        _currentRowIndex = csvReader.Context.Parser?.Row ?? 0;
-        _currentRawRowIndex = csvReader.Context.Parser?.RawRow ?? 0;
     }
 
 
@@ -352,10 +340,7 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         new
         (
             CurrentItemCount,
-            CurrentSkippedItemCount,
-            Volatile.Read(ref _byteCount),
-            Volatile.Read(ref _currentRowIndex),
-            Volatile.Read(ref _currentRawRowIndex)
+            CurrentSkippedItemCount
         );
 
 
