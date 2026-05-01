@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using CsvHelper.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Wolfgang.Etl.Abstractions;
 using Wolfgang.Etl.Csv.Tests.Unit.TestModels;
@@ -281,7 +280,7 @@ public class CsvExtractorTests
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
         var sut = new CsvExtractor<PersonRecord>(new StreamReader(stream, Encoding.UTF8))
         {
-            TrimOptions = TrimOptions.Trim,
+            TrimOptions = CsvTrimOptions.Trim,
         };
 
         var results = new List<PersonRecord>();
