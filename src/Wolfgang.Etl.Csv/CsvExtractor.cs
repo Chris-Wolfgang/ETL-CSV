@@ -108,11 +108,11 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
 
 
     /// <summary>
-    /// Gets or sets a callback invoked when CsvHelper detects bad data.
+    /// Gets or sets a callback invoked when the underlying parser detects bad data.
     /// Return <c>true</c> to continue processing; <c>false</c> to stop.
     /// When <c>null</c>, bad data is logged and processing continues.
     /// </summary>
-    public Func<BadDataFoundArgs, bool>? BadDataFound { get; set; }
+    public Func<CsvBadDataInfo, bool>? BadDataFound { get; set; }
 
 
 
@@ -182,7 +182,7 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
 
 
     /// <summary>Gets or sets the trimming options applied while reading.</summary>
-    public TrimOptions TrimOptions { get; set; } = TrimOptions.None;
+    public CsvTrimOptions TrimOptions { get; set; } = CsvTrimOptions.None;
 
 
 
@@ -210,12 +210,15 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
 
 
 
-    private CsvConfiguration BuildConfiguration() =>
-        new(CultureInfo.CurrentCulture)
+    private CsvConfiguration BuildConfiguration()
+    {
+        var callerBadDataFound = BadDataFound;
+
+        return new CsvConfiguration(CultureInfo.CurrentCulture)
         {
             AllowComments = AllowComments,
-            BadDataFound = BadDataFound is not null
-                ? new BadDataFound(args => BadDataFound(args))
+            BadDataFound = callerBadDataFound is not null
+                ? args => callerBadDataFound(ToCsvBadDataInfo(args))
                 : args => CsvLogMessages.BadDataFound(_logger, args.Context.Parser?.RawRow ?? -1, args.Field, args.RawRecord, null),
             Comment = Comment,
             CountBytes = true,
@@ -226,8 +229,19 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
             IgnoreBlankLines = IgnoreBlankLines,
             Quote = Quote,
             ReadingExceptionOccurred = OnReadingExceptionOccurred,
-            TrimOptions = TrimOptions,
+            TrimOptions = (TrimOptions)(int)TrimOptions,
         };
+    }
+
+
+
+    private static CsvBadDataInfo ToCsvBadDataInfo(BadDataFoundArgs args) =>
+        new
+        (
+            args.Context.Parser?.RawRow ?? -1,
+            args.Field,
+            args.RawRecord
+        );
 
 
 
