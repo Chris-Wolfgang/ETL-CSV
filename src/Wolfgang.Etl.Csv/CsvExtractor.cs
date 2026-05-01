@@ -40,6 +40,7 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
     private int _progressTimerWired;
 
     private int _currentLineNumber;
+    private int _currentBadDataCount;
 
 
 
@@ -215,9 +216,18 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         return new CsvConfiguration(CultureInfo.CurrentCulture)
         {
             AllowComments = AllowComments,
-            BadDataFound = callerBadDataFound is not null
-                ? args => callerBadDataFound(ToCsvBadDataInfo(args))
-                : args => CsvLogMessages.BadDataFound(_logger, args.Context.Parser?.RawRow ?? -1, args.Field, args.RawRecord, null),
+            BadDataFound = args =>
+            {
+                _ = Interlocked.Increment(ref _currentBadDataCount);
+                if (callerBadDataFound is not null)
+                {
+                    callerBadDataFound(ToCsvBadDataInfo(args));
+                }
+                else
+                {
+                    CsvLogMessages.BadDataFound(_logger, args.Context.Parser?.RawRow ?? -1, args.Field, args.RawRecord, null);
+                }
+            },
             Comment = Comment,
             Delimiter = Delimiter,
             Escape = Escape,
@@ -354,7 +364,8 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         (
             CurrentItemCount,
             CurrentSkippedItemCount,
-            Volatile.Read(ref _currentLineNumber)
+            Volatile.Read(ref _currentLineNumber),
+            Volatile.Read(ref _currentBadDataCount)
         );
 
 
