@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -25,7 +26,8 @@ namespace Wolfgang.Etl.Csv;
 /// await loader.LoadAsync(items, cancellationToken);
 /// </code>
 /// </example>
-public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
+public sealed class CsvLoader<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TRecord>
+    : LoaderBase<TRecord, CsvLoaderProgress>
     where TRecord : notnull
 {
     private static readonly string OperationName = $"CSV loading of {typeof(TRecord).Name}";
@@ -215,6 +217,8 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
         await using var csvWriter = new CsvWriter(_writer, BuildConfiguration(), LeaveOpen);
 #pragma warning restore CA2007, MA0004
 
+        RegisterAttributeMap(csvWriter.Context);
+
         if (HasHeaderRecord)
         {
             csvWriter.WriteHeader<TRecord>();
@@ -257,6 +261,19 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
     private void UpdateLineNumber(CsvWriter csvWriter)
     {
         _currentLineNumber = csvWriter.Row;
+    }
+
+
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory.GetMap reflects only public properties of TRecord.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory.GetMap reflects only public properties of TRecord.")]
+    private static void RegisterAttributeMap(CsvContext context)
+    {
+        var map = CsvClassMapFactory.GetMap<TRecord>();
+        if (map is not null)
+        {
+            context.RegisterClassMap(map);
+        }
     }
 
 

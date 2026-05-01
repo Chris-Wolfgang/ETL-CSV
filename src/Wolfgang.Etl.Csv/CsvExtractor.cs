@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -29,7 +30,8 @@ namespace Wolfgang.Etl.Csv;
 /// }
 /// </code>
 /// </example>
-public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorProgress>
+public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TRecord>
+    : ExtractorBase<TRecord, CsvExtractorProgress>
     where TRecord : notnull
 {
     private static readonly string OperationName = $"CSV extraction of {typeof(TRecord).Name}";
@@ -299,6 +301,8 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         using var csvReader = new CsvReader(_reader, configuration, LeaveOpen);
 #pragma warning restore CA2007, MA0004
 
+        RegisterAttributeMap(csvReader.Context);
+
         await PrepareReaderAsync(csvReader).ConfigureAwait(false);
 
         await foreach (var record in csvReader.GetRecordsAsync<TRecord>(token).WithCancellation(token).ConfigureAwait(false))
@@ -354,6 +358,19 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
     private void UpdateLineNumber(CsvReader csvReader)
     {
         _currentLineNumber = csvReader.Context.Parser?.RawRow ?? 0;
+    }
+
+
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory.GetMap reflects only public properties of TRecord.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory.GetMap reflects only public properties of TRecord.")]
+    private static void RegisterAttributeMap(CsvContext context)
+    {
+        var map = CsvClassMapFactory.GetMap<TRecord>();
+        if (map is not null)
+        {
+            context.RegisterClassMap(map);
+        }
     }
 
 
