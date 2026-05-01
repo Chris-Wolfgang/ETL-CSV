@@ -39,6 +39,8 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
     private readonly IProgressTimer? _progressTimer;
     private int _progressTimerWired;
 
+    private int _currentLineNumber;
+
 
 
     /// <summary>
@@ -292,6 +294,7 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         await foreach (var record in csvReader.GetRecordsAsync<TRecord>(token).WithCancellation(token).ConfigureAwait(false))
         {
             token.ThrowIfCancellationRequested();
+            UpdateLineNumber(csvReader);
 
             if (CurrentItemCount >= MaximumItemCount)
             {
@@ -315,12 +318,14 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         // Skip lines before InitialRecordIndex (1-based).
         while (csvReader.Parser.RawRow < InitialRecordIndex - 1 && await csvReader.ReadAsync().ConfigureAwait(false))
         {
+            UpdateLineNumber(csvReader);
             CsvLogMessages.IgnoredRow(_logger, csvReader.Parser.RawRow, null);
         }
 
         // Read the header record if present.
         if (HasHeaderRecord && await csvReader.ReadAsync().ConfigureAwait(false))
         {
+            UpdateLineNumber(csvReader);
             csvReader.ReadHeader();
             csvReader.ValidateHeader<TRecord>();
         }
@@ -328,9 +333,17 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         // Honour SkipItemCount.
         while (CurrentSkippedItemCount < SkipItemCount && await csvReader.ReadAsync().ConfigureAwait(false))
         {
+            UpdateLineNumber(csvReader);
             IncrementCurrentSkippedItemCount();
             CsvLogMessages.SkippedItem(_logger, CurrentSkippedItemCount, SkipItemCount, null);
         }
+    }
+
+
+
+    private void UpdateLineNumber(CsvReader csvReader)
+    {
+        _currentLineNumber = csvReader.Context.Parser?.RawRow ?? 0;
     }
 
 
@@ -340,7 +353,8 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         new
         (
             CurrentItemCount,
-            CurrentSkippedItemCount
+            CurrentSkippedItemCount,
+            Volatile.Read(ref _currentLineNumber)
         );
 
 
