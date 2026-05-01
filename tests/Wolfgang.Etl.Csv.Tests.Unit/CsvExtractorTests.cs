@@ -251,6 +251,26 @@ public class CsvExtractorTests
 
 
     [Fact]
+    public async Task ExtractAsync_increments_CurrentBadDataCount_for_each_bad_data_event()
+    {
+        var csv = "FirstName,LastName,Age\r\nAl\"ice,Smith,30\r\nBo\"b,Jones,25\r\n";
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        var sut = new CsvExtractor<PersonRecord>(new StreamReader(stream, Encoding.UTF8));
+
+        var progress = new SyncProgress<CsvExtractorProgress>();
+
+        await foreach (var _ in sut.ExtractAsync(progress))
+        {
+            // drain
+        }
+
+        Assert.NotNull(progress.LastValue);
+        Assert.True(progress.LastValue!.CurrentBadDataCount >= 1);
+    }
+
+
+
+    [Fact]
     public async Task ExtractAsync_when_BadDataFound_callback_returns_false_propagates()
     {
         var csv = "FirstName,LastName,Age\r\nAl\"ice,Smith,30\r\n";
