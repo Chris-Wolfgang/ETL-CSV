@@ -35,6 +35,8 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
     private readonly IProgressTimer? _progressTimer;
     private int _progressTimerWired;
 
+    private int _currentLineNumber;
+
 
 
     /// <summary>
@@ -217,6 +219,7 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
         {
             csvWriter.WriteHeader<TRecord>();
             await csvWriter.NextRecordAsync().ConfigureAwait(false);
+            UpdateLineNumber(csvWriter);
         }
 
         await foreach (var item in items.WithCancellation(token).ConfigureAwait(false))
@@ -240,6 +243,7 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
             await csvWriter.NextRecordAsync().ConfigureAwait(false);
 
             IncrementCurrentItemCount();
+            UpdateLineNumber(csvWriter);
             CsvLogMessages.LoadedItem(_logger, CurrentItemCount, null);
         }
 
@@ -250,12 +254,20 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
 
 
 
+    private void UpdateLineNumber(CsvWriter csvWriter)
+    {
+        _currentLineNumber = csvWriter.Row;
+    }
+
+
+
     /// <inheritdoc />
     protected override CsvLoaderProgress CreateProgressReport() =>
         new
         (
             CurrentItemCount,
-            CurrentSkippedItemCount
+            CurrentSkippedItemCount,
+            Volatile.Read(ref _currentLineNumber)
         );
 
 
