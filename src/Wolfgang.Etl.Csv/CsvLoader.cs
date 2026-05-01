@@ -137,14 +137,14 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
 
     /// <summary>
     /// Gets or sets a callback that decides whether a field should be quoted.
-    /// When <c>null</c>, CsvHelper's default policy is used.
+    /// When <c>null</c>, the underlying parser's default policy is used.
     /// </summary>
-    public ShouldQuote? ShouldQuote { get; set; }
+    public Func<CsvShouldQuoteContext, bool>? ShouldQuote { get; set; }
 
 
 
     /// <summary>Gets or sets the trimming options applied while writing.</summary>
-    public TrimOptions TrimOptions { get; set; } = TrimOptions.None;
+    public CsvTrimOptions TrimOptions { get; set; } = CsvTrimOptions.None;
 
 
 
@@ -181,12 +181,16 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
             Encoding = Encoding,
             NewLine = NewLine,
             Quote = Quote,
-            TrimOptions = TrimOptions,
+            TrimOptions = (TrimOptions)(int)TrimOptions,
         };
 
-        if (ShouldQuote is not null)
+        var callerShouldQuote = ShouldQuote;
+        if (callerShouldQuote is not null)
         {
-            configuration.ShouldQuote = ShouldQuote;
+            configuration.ShouldQuote = args => callerShouldQuote
+            (
+                new CsvShouldQuoteContext(args.Field, args.FieldType)
+            );
         }
 
         return configuration;
