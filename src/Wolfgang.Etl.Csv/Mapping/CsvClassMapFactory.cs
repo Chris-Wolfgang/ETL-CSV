@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -74,6 +75,77 @@ internal static class CsvClassMapFactory
         foreach (var prop in properties)
         {
             ApplyAttributes(map, prop);
+        }
+
+        return map;
+    }
+
+
+
+    /// <summary>
+    /// Builds a <see cref="ClassMap{T}"/> from a runtime list of
+    /// <see cref="CsvColumnMap"/> descriptors. Used when the layout is selected at
+    /// runtime (e.g. from configuration or a database) rather than via attributes.
+    /// </summary>
+    /// <typeparam name="T">The record type being mapped.</typeparam>
+    /// <param name="columnMaps">Runtime column descriptors. Must be non-empty.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="columnMaps"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">A descriptor names a property that doesn't exist on <typeparamref name="T"/>.</exception>
+    [RequiresUnreferencedCode("Reflects over the public properties of T to build a CsvHelper ClassMap from runtime column descriptors.")]
+    public static ClassMap<T> BuildFromColumnMaps<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>
+    (
+        IReadOnlyList<CsvColumnMap> columnMaps
+    )
+    {
+        if (columnMaps is null)
+        {
+            throw new ArgumentNullException(nameof(columnMaps));
+        }
+
+        var type = typeof(T);
+        var properties = type
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .ToDictionary(p => p.Name, StringComparer.Ordinal);
+
+        var map = new DefaultClassMap<T>();
+
+        foreach (var col in columnMaps)
+        {
+            if (!properties.TryGetValue(col.PropertyName, out var prop))
+            {
+                throw new ArgumentException
+                (
+                    $"Property '{col.PropertyName}' was not found on type '{type.FullName}'.",
+                    nameof(columnMaps)
+                );
+            }
+
+            var memberMap = map.Map(prop.DeclaringType ?? prop.ReflectedType!, prop);
+
+            if (!string.IsNullOrEmpty(col.Name))
+            {
+                memberMap.Name(col.Name!);
+            }
+
+            if (col.Index >= 0)
+            {
+                memberMap.Index(col.Index);
+            }
+
+            if (col.Optional)
+            {
+                memberMap.Optional();
+            }
+
+            if (!string.IsNullOrEmpty(col.Format))
+            {
+                memberMap.TypeConverterOption.Format(col.Format!);
+            }
+
+            if (col.Default is not null)
+            {
+                memberMap.Default(col.Default);
+            }
         }
 
         return map;

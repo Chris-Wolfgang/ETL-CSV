@@ -181,6 +181,70 @@ public class CsvAttributeMappingTests
 
 
 
+    [ExcludeFromCodeCoverage]
+    public sealed record PriceRecord
+    {
+        public string ProductNumber { get; set; } = string.Empty;
+        public decimal RetailPrice { get; set; }
+        public decimal MSRP { get; set; }
+    }
+
+
+
+    [Fact]
+    public async Task ExtractAsync_when_runtime_ColumnMaps_set_binds_by_index_and_overrides_attributes()
+    {
+        // Layout: garbage,garbage,ProductNumber,garbage,RetailPrice,garbage,MSRP
+        var csv = "x,y,P-12345,z,9.99,q,14.50\r\nx,y,P-67890,z,4.50,q,7.75\r\n";
+        var sut = new CsvExtractor<PriceRecord>(Reader(csv))
+        {
+            HasHeaderRecord = false,
+            ColumnMaps = new[]
+            {
+                new CsvColumnMap(nameof(PriceRecord.ProductNumber)) { Index = 2 },
+                new CsvColumnMap(nameof(PriceRecord.RetailPrice))   { Index = 4 },
+                new CsvColumnMap(nameof(PriceRecord.MSRP))          { Index = 6 },
+            },
+        };
+
+        var results = new List<PriceRecord>();
+        await foreach (var item in sut.ExtractAsync())
+        {
+            results.Add(item);
+        }
+
+        Assert.Equal(2, results.Count);
+        Assert.Equal("P-12345", results[0].ProductNumber);
+        Assert.Equal(9.99m, results[0].RetailPrice);
+        Assert.Equal(14.50m, results[0].MSRP);
+        Assert.Equal("P-67890", results[1].ProductNumber);
+    }
+
+
+
+    [Fact]
+    public async Task ExtractAsync_when_runtime_ColumnMaps_names_unknown_property_throws()
+    {
+        var csv = "x\r\n";
+        var sut = new CsvExtractor<PriceRecord>(Reader(csv))
+        {
+            HasHeaderRecord = false,
+            ColumnMaps = new[]
+            {
+                new CsvColumnMap("DoesNotExist") { Index = 0 },
+            },
+        };
+
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        {
+            await foreach (var _ in sut.ExtractAsync())
+            {
+            }
+        });
+    }
+
+
+
     [Fact]
     public async Task LoadAsync_when_Format_is_specified_writes_using_format()
     {

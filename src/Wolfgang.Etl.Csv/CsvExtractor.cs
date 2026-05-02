@@ -188,6 +188,21 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
 
 
     /// <summary>
+    /// Gets or sets a runtime column-map collection that overrides any
+    /// <see cref="CsvColumnAttribute"/> / <see cref="CsvIgnoreAttribute"/> decorations
+    /// on <typeparamref name="TRecord"/>.
+    /// </summary>
+    /// <remarks>
+    /// Use this property when the CSV layout isn't known at compile time — for example
+    /// when the column positions for a record type are loaded from configuration or a
+    /// database "template" row. When non-null and non-empty, the runtime maps are the
+    /// only source of property-to-column bindings; attribute-based mapping is bypassed.
+    /// </remarks>
+    public IReadOnlyList<CsvColumnMap>? ColumnMaps { get; set; }
+
+
+
+    /// <summary>
     /// Gets or sets the number of records to skip before yielding results.
     /// This is an alias for <see cref="ExtractorBase{TSource,TProgress}.SkipItemCount"/>.
     /// </summary>
@@ -301,7 +316,7 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
         using var csvReader = new CsvReader(_reader, configuration, LeaveOpen);
 #pragma warning restore CA2007, MA0004
 
-        RegisterAttributeMap(csvReader.Context);
+        RegisterRecordMap(csvReader.Context);
 
         await PrepareReaderAsync(csvReader).ConfigureAwait(false);
 
@@ -362,11 +377,14 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
 
 
 
-    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory.GetMap reflects only public properties of TRecord.")]
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory.GetMap reflects only public properties of TRecord.")]
-    private static void RegisterAttributeMap(CsvContext context)
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory reflects only public properties of TRecord.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory reflects only public properties of TRecord.")]
+    private void RegisterRecordMap(CsvContext context)
     {
-        var map = CsvClassMapFactory.GetMap<TRecord>();
+        var map = ColumnMaps is { Count: > 0 }
+            ? CsvClassMapFactory.BuildFromColumnMaps<TRecord>(ColumnMaps)
+            : CsvClassMapFactory.GetMap<TRecord>();
+
         if (map is not null)
         {
             context.RegisterClassMap(map);

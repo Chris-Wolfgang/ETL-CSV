@@ -150,6 +150,20 @@ public sealed class CsvLoader<[DynamicallyAccessedMembers(DynamicallyAccessedMem
 
 
     /// <summary>
+    /// Gets or sets a runtime column-map collection that overrides any
+    /// <see cref="CsvColumnAttribute"/> / <see cref="CsvIgnoreAttribute"/> decorations
+    /// on <typeparamref name="TRecord"/>.
+    /// </summary>
+    /// <remarks>
+    /// Use this property when the CSV layout isn't known at compile time. When non-null
+    /// and non-empty, the runtime maps are the only source of property-to-column
+    /// bindings; attribute-based mapping is bypassed.
+    /// </remarks>
+    public IReadOnlyList<CsvColumnMap>? ColumnMaps { get; set; }
+
+
+
+    /// <summary>
     /// Gets or sets the number of records to skip before writing.
     /// This is an alias for <see cref="LoaderBase{TDestination,TProgress}.SkipItemCount"/>.
     /// </summary>
@@ -217,7 +231,7 @@ public sealed class CsvLoader<[DynamicallyAccessedMembers(DynamicallyAccessedMem
         await using var csvWriter = new CsvWriter(_writer, BuildConfiguration(), LeaveOpen);
 #pragma warning restore CA2007, MA0004
 
-        RegisterAttributeMap(csvWriter.Context);
+        RegisterRecordMap(csvWriter.Context);
 
         if (HasHeaderRecord)
         {
@@ -265,11 +279,14 @@ public sealed class CsvLoader<[DynamicallyAccessedMembers(DynamicallyAccessedMem
 
 
 
-    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory.GetMap reflects only public properties of TRecord.")]
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory.GetMap reflects only public properties of TRecord.")]
-    private static void RegisterAttributeMap(CsvContext context)
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory reflects only public properties of TRecord.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory reflects only public properties of TRecord.")]
+    private void RegisterRecordMap(CsvContext context)
     {
-        var map = CsvClassMapFactory.GetMap<TRecord>();
+        var map = ColumnMaps is { Count: > 0 }
+            ? CsvClassMapFactory.BuildFromColumnMaps<TRecord>(ColumnMaps)
+            : CsvClassMapFactory.GetMap<TRecord>();
+
         if (map is not null)
         {
             context.RegisterClassMap(map);
