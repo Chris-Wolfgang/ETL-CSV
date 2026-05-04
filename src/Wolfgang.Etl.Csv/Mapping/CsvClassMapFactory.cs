@@ -19,7 +19,10 @@ namespace Wolfgang.Etl.Csv;
 /// </remarks>
 internal static class CsvClassMapFactory
 {
-    private static readonly ConcurrentDictionary<Type, ClassMap> Cache = new();
+    // The value type is intentionally nullable: a null entry means "this type has
+    // no Wolfgang.Etl.Csv attributes, defer to the parser's default conventions".
+    // Caching the negative result avoids re-reflecting on every extraction.
+    private static readonly ConcurrentDictionary<Type, ClassMap?> Cache = new();
 
 
 
@@ -34,18 +37,11 @@ internal static class CsvClassMapFactory
     [RequiresUnreferencedCode("Reflects over the public properties of T to build a CsvHelper ClassMap. Not safe under aggressive trimming or NativeAOT without preserving T's properties.")]
     public static ClassMap<T>? GetMap<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>()
     {
-        var type = typeof(T);
-
-        if (Cache.TryGetValue(type, out var cached))
-        {
-            return (ClassMap<T>?)cached;
-        }
-
-        var built = BuildMap<T>();
-
-        // Cache even nulls so we don't re-reflect the type on every call.
-        Cache[type] = built!;
-        return built;
+        // GetOrAdd makes the get/build/cache sequence atomic so two threads racing
+        // for the same T can't both pay the reflection cost or, worse, end up with
+        // distinct ClassMap instances if CsvHelper ever became sensitive to identity.
+        var cached = Cache.GetOrAdd(typeof(T), static _ => BuildMap<T>());
+        return (ClassMap<T>?)cached;
     }
 
 
