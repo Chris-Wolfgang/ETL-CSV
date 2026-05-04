@@ -280,11 +280,17 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
         var ctx = args.Exception.Context;
         var columnIndex = ctx?.Reader?.CurrentIndex ?? -1;
         var headerRecord = ctx?.Reader?.HeaderRecord;
+        var currentRecord = ctx?.Parser?.Record;
+
+        // Bounds-check both index lookups. The original parsing exception is often
+        // caused by a record with the wrong number of fields, and indexing into a
+        // shorter record from the handler would itself throw IndexOutOfRangeException
+        // and mask the underlying error.
         var columnName = headerRecord is not null && columnIndex >= 0 && columnIndex < headerRecord.Length
             ? headerRecord[columnIndex]
             : null;
-        var columnValue = ctx?.Reader is not null && columnIndex >= 0
-            ? ctx.Reader[columnIndex]
+        var columnValue = currentRecord is not null && columnIndex >= 0 && columnIndex < currentRecord.Length
+            ? currentRecord[columnIndex]
             : null;
         CsvLogMessages.ReadingExceptionOccurred
         (
@@ -372,7 +378,9 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
 
     private void UpdateLineNumber(CsvReader csvReader)
     {
-        _currentLineNumber = csvReader.Context.Parser?.RawRow ?? 0;
+        // Use Volatile.Write so the timer thread that calls CreateProgressReport
+        // (which uses Volatile.Read on this field) sees a consistent snapshot.
+        Volatile.Write(ref _currentLineNumber, csvReader.Context.Parser?.RawRow ?? 0);
     }
 
 
