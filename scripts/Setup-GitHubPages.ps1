@@ -587,8 +587,10 @@ try {
             try {
                 $enableOutput = gh api --method POST "/repos/$Repository/pages" --input $tempFile 2>&1
                 $enableOutputText = ($enableOutput | Out-String)
-                $alreadyEnabled = $enableOutputText -match 'GitHub Pages is already enabled' -or
-                                  $enableOutputText -match 'HTTP 409'
+                # Only treat as already-enabled when the response explicitly says so.
+                # HTTP 409 on its own can indicate other conflicts; matching the bare
+                # status would mask real failures.
+                $alreadyEnabled = $enableOutputText -match 'GitHub Pages is already enabled'
 
                 if ($LASTEXITCODE -ne 0 -and -not $alreadyEnabled) {
                     Write-Error-Custom "Failed to enable GitHub Pages. GitHub CLI output:`n$enableOutput"
@@ -626,6 +628,9 @@ try {
                                 }
                             }
                         }
+                    } else {
+                        Write-Warning-Custom "Could not retrieve current GitHub Pages configuration. GitHub CLI output:`n$pagesUrlInfo"
+                        Write-Info "You may need to verify the configuration manually in: Settings → Pages"
                     }
                 }
             } catch {
