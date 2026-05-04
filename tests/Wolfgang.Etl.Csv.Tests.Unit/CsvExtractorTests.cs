@@ -286,8 +286,6 @@ public class CsvExtractorTests
             results.Add(item);
         }
 
-        // Even with malformed data, we should yield the row (CsvHelper's tolerance);
-        // the callback signals "bad data was seen" but the row may still be returned.
         Assert.Single(results);
     }
 
@@ -382,7 +380,7 @@ public class CsvExtractorTests
 
 
     [Fact]
-    public async Task ExtractAsync_when_type_conversion_fails_invokes_OnReadingExceptionOccurred_handler()
+    public Task ExtractAsync_when_type_conversion_fails_invokes_OnReadingExceptionOccurred_handler()
     {
         // "not-a-number" cannot be converted to int for the Age column.
         // CsvHelper raises this through OnReadingExceptionOccurred (the handler logs
@@ -393,11 +391,11 @@ public class CsvExtractorTests
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
         var sut = new CsvExtractor<PersonRecord>(new StreamReader(stream, Encoding.UTF8));
 
-        await Assert.ThrowsAsync<CsvHelper.TypeConversion.TypeConverterException>
+        return Assert.ThrowsAsync<CsvHelper.TypeConversion.TypeConverterException>
         (
             async () =>
             {
-                await foreach (var _ in sut.ExtractAsync())
+                await foreach (var _ in sut.ExtractAsync().ConfigureAwait(false))
                 {
                     // drain
                 }
