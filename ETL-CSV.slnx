@@ -43,11 +43,7 @@
   </Folder>
   <Folder Name="/benchmarks/" />
   <Folder Name="/examples/" />
-  <Folder Name="/src/">
-    <Project Path="src/Wolfgang.Etl.Csv/Wolfgang.Etl.Csv.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Wolfgang.Etl.Csv.Tests.Unit/Wolfgang.Etl.Csv.Tests.Unit.csproj" />
-  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/tests/" />
 </Solution>
 
