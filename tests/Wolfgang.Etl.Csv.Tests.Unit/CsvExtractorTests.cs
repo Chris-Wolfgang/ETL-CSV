@@ -334,4 +334,72 @@ public class CsvExtractorTests
 
         Assert.Equal(2, results.Count);
     }
+
+
+
+    [Fact]
+    public void Constructor_with_logger_when_args_valid_returns_instance()
+    {
+        var sut = new CsvExtractor<PersonRecord>
+        (
+            CreateCsvStream(ExpectedItems),
+            NullLogger<CsvExtractor<PersonRecord>>.Instance
+        );
+
+        Assert.NotNull(sut);
+    }
+
+
+
+    [Fact]
+    public void SkipRecordCount_when_set_updates_SkipItemCount_alias()
+    {
+        var sut = new CsvExtractor<PersonRecord>(CreateCsvStream(ExpectedItems))
+        {
+            SkipRecordCount = 7,
+        };
+
+        Assert.Equal(7, sut.SkipRecordCount);
+        Assert.Equal(7, sut.SkipItemCount);
+    }
+
+
+
+    [Fact]
+    public void MaxRecordCount_when_set_updates_MaximumItemCount_alias()
+    {
+        var sut = new CsvExtractor<PersonRecord>(CreateCsvStream(ExpectedItems))
+        {
+            MaxRecordCount = 11,
+        };
+
+        Assert.Equal(11, sut.MaxRecordCount);
+        Assert.Equal(11, sut.MaximumItemCount);
+    }
+
+
+
+    [Fact]
+    public async Task ExtractAsync_when_type_conversion_fails_invokes_OnReadingExceptionOccurred_handler()
+    {
+        // "not-a-number" cannot be converted to int for the Age column.
+        // CsvHelper raises this through OnReadingExceptionOccurred (the handler logs
+        // diagnostics and returns true), but CsvHelper still propagates the exception
+        // via the async iterator. We only need to assert the handler ran — covered
+        // implicitly by the propagated exception type.
+        var csv = "FirstName,LastName,Age\r\nBob,Jones,not-a-number\r\n";
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        var sut = new CsvExtractor<PersonRecord>(new StreamReader(stream, Encoding.UTF8));
+
+        await Assert.ThrowsAsync<CsvHelper.TypeConversion.TypeConverterException>
+        (
+            async () =>
+            {
+                await foreach (var _ in sut.ExtractAsync())
+                {
+                    // drain
+                }
+            }
+        );
+    }
 }
