@@ -171,11 +171,12 @@ public class CsvLoaderTests
 
         await writer.FlushAsync();
         stream.Position = 0;
-        var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var text = await reader.ReadToEndAsync();
 
-        Assert.Contains("FirstName,LastName,Age", text);
-        Assert.Contains("Alice,Smith,30", text);
-        Assert.Contains("Bob,Jones,25", text);
+        Assert.Contains("FirstName,LastName,Age", text, StringComparison.Ordinal);
+        Assert.Contains("Alice,Smith,30", text, StringComparison.Ordinal);
+        Assert.Contains("Bob,Jones,25", text, StringComparison.Ordinal);
     }
 
 
@@ -195,10 +196,11 @@ public class CsvLoaderTests
 
         await writer.FlushAsync();
         stream.Position = 0;
-        var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var text = await reader.ReadToEndAsync();
 
-        Assert.DoesNotContain("FirstName,LastName,Age", text);
-        Assert.Contains("Alice,Smith,30", text);
+        Assert.DoesNotContain("FirstName,LastName,Age", text, StringComparison.Ordinal);
+        Assert.Contains("Alice,Smith,30", text, StringComparison.Ordinal);
     }
 
 
@@ -218,10 +220,11 @@ public class CsvLoaderTests
 
         await writer.FlushAsync();
         stream.Position = 0;
-        var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var text = await reader.ReadToEndAsync();
 
-        Assert.Contains("FirstName|LastName|Age", text);
-        Assert.Contains("Alice|Smith|30", text);
+        Assert.Contains("FirstName|LastName|Age", text, StringComparison.Ordinal);
+        Assert.Contains("Alice|Smith|30", text, StringComparison.Ordinal);
     }
 
 
@@ -241,10 +244,11 @@ public class CsvLoaderTests
 
         await writer.FlushAsync();
         stream.Position = 0;
-        var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var text = await reader.ReadToEndAsync();
 
-        Assert.Contains("\"Alice\"", text);
-        Assert.Contains("\"Smith\"", text);
+        Assert.Contains("\"Alice\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"Smith\"", text, StringComparison.Ordinal);
     }
 
 
@@ -293,13 +297,13 @@ public class CsvLoaderTests
 
 
     [Fact]
-    public async Task LoadAsync_when_items_is_null_throws_ArgumentNullException()
+    public Task LoadAsync_when_items_is_null_throws_ArgumentNullException()
     {
         var (sut, _, _) = CreateLoader();
 
-        await Assert.ThrowsAsync<ArgumentNullException>
+        return Assert.ThrowsAsync<ArgumentNullException>
         (
-            async () => await sut.LoadAsync(null!)
+            () => sut.LoadAsync(null!)
         );
     }
 }
