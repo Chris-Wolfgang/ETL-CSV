@@ -256,7 +256,9 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
 
     private void UpdateLineNumber(CsvWriter csvWriter)
     {
-        _currentLineNumber = csvWriter.Row;
+        // Use Volatile.Write so the timer thread that calls CreateProgressReport
+        // (which uses Volatile.Read on this field) sees a consistent snapshot.
+        Volatile.Write(ref _currentLineNumber, csvWriter.Row);
     }
 
 

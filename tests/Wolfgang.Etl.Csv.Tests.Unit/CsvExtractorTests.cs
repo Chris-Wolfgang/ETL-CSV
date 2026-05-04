@@ -317,7 +317,7 @@ public class CsvExtractorTests
 
 
     [Fact]
-    public async Task ExtractAsync_when_IgnoreBlankLines_is_false_blank_line_throws_or_skipped()
+    public async Task ExtractAsync_when_IgnoreBlankLines_is_true_skips_blank_lines()
     {
         var csv = "FirstName,LastName,Age\r\nAlice,Smith,30\r\n\r\nBob,Jones,25\r\n";
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
@@ -333,6 +333,8 @@ public class CsvExtractorTests
         }
 
         Assert.Equal(2, results.Count);
+        Assert.Equal("Alice", results[0].FirstName);
+        Assert.Equal("Bob", results[1].FirstName);
     }
 
 
