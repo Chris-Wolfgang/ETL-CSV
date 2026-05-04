@@ -249,4 +249,57 @@ public class CsvLoaderTests
 
 
 
+    [Fact]
+    public void Constructor_with_logger_when_args_valid_returns_instance()
+    {
+        var stream = new MemoryStream();
+        var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), 1024, leaveOpen: true);
+
+        var sut = new CsvLoader<PersonRecord>
+        (
+            writer,
+            NullLogger<CsvLoader<PersonRecord>>.Instance
+        );
+
+        Assert.NotNull(sut);
+    }
+
+
+
+    [Fact]
+    public void SkipRecordCount_when_set_updates_SkipItemCount_alias()
+    {
+        var (sut, _, _) = CreateLoader();
+
+        sut.SkipRecordCount = 4;
+
+        Assert.Equal(4, sut.SkipRecordCount);
+        Assert.Equal(4, sut.SkipItemCount);
+    }
+
+
+
+    [Fact]
+    public void MaxRecordCount_when_set_updates_MaximumItemCount_alias()
+    {
+        var (sut, _, _) = CreateLoader();
+
+        sut.MaxRecordCount = 9;
+
+        Assert.Equal(9, sut.MaxRecordCount);
+        Assert.Equal(9, sut.MaximumItemCount);
+    }
+
+
+
+    [Fact]
+    public async Task LoadAsync_when_items_is_null_throws_ArgumentNullException()
+    {
+        var (sut, _, _) = CreateLoader();
+
+        await Assert.ThrowsAsync<ArgumentNullException>
+        (
+            async () => await sut.LoadAsync(null!)
+        );
+    }
 }
