@@ -1,6 +1,6 @@
 # Wolfgang.Etl.Csv
 
-An Extractor and Loader that implement IExtract<T> and ILoadAsync<T> for use in ETLs build using Wolfgang.Etl.Abstractions
+A `CsvExtractor<T>` and `CsvLoader<T>` for streaming CSV files into and out of strongly-typed records, built on [`Wolfgang.Etl.Abstractions`](https://github.com/Chris-Wolfgang/ETL-Abstractions) and powered internally by [CsvHelper](https://joshclose.github.io/CsvHelper/). Supports compile-time and runtime column mapping, progress reporting with line numbers and bad-data counts, and an async-first I/O model.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-Multi--Targeted-purple.svg)](https://dotnet.microsoft.com/)
@@ -35,16 +35,126 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 
 ## 🚀 Quick Start
 
-{{QUICK_START_EXAMPLE}}
+Define a record type, then read or write CSV with a single `await foreach` / `await LoadAsync(...)`.
+
+### Reading a CSV
+
+```csharp
+using System.IO;
+using Wolfgang.Etl.Csv;
+
+public sealed record Person
+{
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName  { get; set; } = string.Empty;
+    public int    Age       { get; set; }
+}
+
+using var reader = new StreamReader("people.csv");
+var extractor = new CsvExtractor<Person>(reader);
+
+await foreach (var person in extractor.ExtractAsync(cancellationToken))
+{
+    Console.WriteLine($"{person.FirstName} {person.LastName} ({person.Age})");
+}
+```
+
+### Writing a CSV
+
+```csharp
+using var writer = new StreamWriter("people.csv");
+var loader = new CsvLoader<Person>(writer);
+
+var people = new[]
+{
+    new Person { FirstName = "Alice", LastName = "Smith", Age = 30 },
+    new Person { FirstName = "Bob",   LastName = "Jones", Age = 25 },
+}.ToAsyncEnumerable();
+
+await loader.LoadAsync(people, cancellationToken);
+```
+
+That's the full surface for the simplest case. The library auto-maps record properties to CSV columns by name; everything below is opt-in.
 
 ---
 
 ## ✨ Features
 
-{{FEATURES_TABLE}}
+| Feature | Where it lives |
+|---|---|
+| Async-first read/write of CSV streams | `CsvExtractor<T>`, `CsvLoader<T>` |
+| Multi-targeted: net462 → net10.0 | csproj `<TargetFrameworks>` |
+| Progress reporting with item count, skip count, line number, bad-data count | `CsvExtractorProgress`, `CsvLoaderProgress` |
+| Cancellation support throughout | `CancellationToken` on every async API |
+| Skip metadata rows / start at a specific line | `InitialRecordIndex` |
+| Limit how many records get processed | `MaxRecordCount`, `SkipRecordCount` |
+| Compile-time column mapping (declarative) | `[CsvColumn]`, `[CsvIgnore]` |
+| Runtime column mapping (configuration / DB-driven layouts) | `CsvColumnMap`, `ColumnMaps` property |
+| Parser-agnostic public surface (no `CsvHelper` types leaked) | `CsvTrimOptions`, `CsvBadDataInfo`, `CsvShouldQuoteContext` |
+| Custom delimiter, quote, escape, comment character | `Delimiter`, `Quote`, `Escape`, `Comment`, `AllowComments` |
+| Encoding control | `Encoding` |
+| `LeaveOpen` semantics matching .NET conventions | `LeaveOpen` |
+| Trim whitespace inside or outside quotes | `TrimOptions` |
+| Custom bad-data and quoting callbacks | `BadDataFound`, `ShouldQuote` |
 
-**Examples:**
-{{FEATURE_EXAMPLES}}
+### Example: Compile-time column mapping with `[CsvColumn]`
+
+When the CSV's column names don't match your record's property names, decorate properties:
+
+```csharp
+public sealed record Person
+{
+    [CsvColumn(Name = "first_name")]
+    public string FirstName { get; set; } = string.Empty;
+
+    [CsvColumn(Name = "last_name")]
+    public string LastName { get; set; } = string.Empty;
+
+    [CsvColumn(Name = "dob", Format = "yyyy-MM-dd", Optional = true, Default = "1970-01-01")]
+    public DateTime DateOfBirth { get; set; }
+
+    [CsvIgnore]
+    public string ComputedDisplayName { get; set; } = string.Empty;
+}
+```
+
+`CsvColumnAttribute` accepts `Name`, `Index` (0-based), `Optional`, `Format`, and `Default`. `[CsvIgnore]` excludes a property entirely. Records without any of these attributes fall back to CsvHelper's default by-name mapping.
+
+### Example: Runtime column mapping (when the layout isn't known at compile time)
+
+When column positions come from configuration or a database — for example, several supplier files with different column orders all binding into the same DTO — set `ColumnMaps` instead of (or in addition to) attributes:
+
+```csharp
+var template = LoadTemplateFromDb("supplier-a"); // 1-based positions per the user's domain
+
+var extractor = new CsvExtractor<ProductRecord>(reader)
+{
+    InitialRecordIndex = template.StartRow,
+    HasHeaderRecord = false,
+    ColumnMaps = new[]
+    {
+        new CsvColumnMap(nameof(ProductRecord.ProductNumber)) { Index = template.ProductNumberColumn - 1 },
+        new CsvColumnMap(nameof(ProductRecord.RetailPrice))   { Index = template.RetailPriceColumn   - 1 },
+        new CsvColumnMap(nameof(ProductRecord.MSRP))          { Index = template.MsrpColumn          - 1 },
+    },
+};
+```
+
+When `ColumnMaps` is non-null and non-empty, runtime maps override any attribute-based mapping for that instance. See the runnable example under [`examples/Wolfgang.Etl.Csv.Examples.DynamicTemplates/`](examples/Wolfgang.Etl.Csv.Examples.DynamicTemplates/).
+
+### Example: Progress reporting
+
+```csharp
+var progress = new Progress<CsvExtractorProgress>(p =>
+    Console.WriteLine($"Item {p.CurrentItemCount} (line {p.CurrentLineNumber}); skipped {p.CurrentSkippedItemCount}; bad data {p.CurrentBadDataCount}"));
+
+await foreach (var person in extractor.ExtractAsync(progress, cancellationToken))
+{
+    // ...
+}
+```
+
+`ReportingInterval` (inherited from `ExtractorBase`) controls how often progress is sampled.
 
 ---
 
@@ -177,5 +287,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 ## 🙏 Acknowledgments
 
-{{ACKNOWLEDGMENTS}}
+- [**CsvHelper**](https://joshclose.github.io/CsvHelper/) by Josh Close — the underlying CSV parser and writer. Dual-licensed under MS-PL and Apache 2.0; both are MIT-compatible.
+- [**Wolfgang.Etl.Abstractions**](https://github.com/Chris-Wolfgang/ETL-Abstractions) — the `ExtractorBase<T, TProgress>` / `LoaderBase<T, TProgress>` contracts this library implements.
+- [**Wolfgang.Etl.TestKit.Xunit**](https://github.com/Chris-Wolfgang/ETL-Test-Kit) — provides the `ExtractorBaseContractTests` / `LoaderBaseContractTests` used to verify behavioural conformance.
 

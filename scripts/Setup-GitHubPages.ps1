@@ -586,20 +586,51 @@ try {
             
             try {
                 $enableOutput = gh api --method POST "/repos/$Repository/pages" --input $tempFile 2>&1
-                if ($LASTEXITCODE -ne 0) {
+                $enableOutputText = ($enableOutput | Out-String)
+                # Only treat as already-enabled when the response explicitly says so.
+                # HTTP 409 on its own can indicate other conflicts; matching the bare
+                # status would mask real failures.
+                $alreadyEnabled = $enableOutputText -match 'GitHub Pages is already enabled'
+
+                if ($LASTEXITCODE -ne 0 -and -not $alreadyEnabled) {
                     Write-Error-Custom "Failed to enable GitHub Pages. GitHub CLI output:`n$enableOutput"
                     Write-Host "You may need to enable it manually in: Settings → Pages" -ForegroundColor Yellow
                 } else {
-                    Write-Success "Enabled GitHub Pages with gh-pages branch"
-                    
-                    # Get the Pages URL
+                    if ($alreadyEnabled) {
+                        Write-Success "GitHub Pages is already enabled"
+                    } else {
+                        Write-Success "Enabled GitHub Pages with gh-pages branch"
+                    }
+
+                    # Get the Pages URL / current config
                     Start-Sleep -Seconds 2
                     $pagesUrlInfo = gh api "/repos/$Repository/pages" 2>&1
                     if ($LASTEXITCODE -eq 0) {
                         $pagesUrlData = $pagesUrlInfo | ConvertFrom-Json
+                        if ($pagesUrlData.source) {
+                            Write-Info "   Source: $($pagesUrlData.source.branch)/$($pagesUrlData.source.path)"
+                        }
                         if ($pagesUrlData.html_url) {
                             Write-Info "   URL: $($pagesUrlData.html_url)"
                         }
+
+                        # If already enabled but not on gh-pages, offer to switch
+                        if ($alreadyEnabled -and $pagesUrlData.source -and
+                            $pagesUrlData.source.branch -ne "gh-pages") {
+                            Write-Warning-Custom "GitHub Pages is configured to use '$($pagesUrlData.source.branch)' branch, not 'gh-pages'"
+                            $switchResponse = Read-Host "Would you like to update it to use the gh-pages branch? (y/N)"
+                            if ($switchResponse -eq 'y' -or $switchResponse -eq 'Y') {
+                                $switchOutput = gh api --method PUT "/repos/$Repository/pages" --input $tempFile 2>&1
+                                if ($LASTEXITCODE -ne 0) {
+                                    Write-Error-Custom "Failed to update GitHub Pages source branch. GitHub CLI output:`n$switchOutput"
+                                } else {
+                                    Write-Success "Updated GitHub Pages to use gh-pages branch"
+                                }
+                            }
+                        }
+                    } else {
+                        Write-Warning-Custom "Could not retrieve current GitHub Pages configuration. GitHub CLI output:`n$pagesUrlInfo"
+                        Write-Info "You may need to verify the configuration manually in: Settings → Pages"
                     }
                 }
             } catch {

@@ -1,0 +1,29 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<rect width="512" height="512" rx="80" fill="#350D5E"/>
+<rect x="14" y="14" width="484" height="484" rx="70" fill="#350D5E" stroke="#E8D5F5" stroke-width="1.5"/>
+<circle cx="256" cy="120" r="28" fill="#B76FE0" stroke="#ffffff" stroke-width="3"/>
+<text x="256" y="128" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="28" fill="#ffffff">{ }</text>
+<line x1="256" y1="148" x2="140" y2="220" stroke="#D4A8F0" stroke-width="3" stroke-linecap="round"/>
+<line x1="256" y1="148" x2="256" y2="220" stroke="#D4A8F0" stroke-width="3" stroke-linecap="round"/>
+<line x1="256" y1="148" x2="372" y2="220" stroke="#D4A8F0" stroke-width="3" stroke-linecap="round"/>
+<rect x="108" y="220" width="64" height="28" rx="8" fill="#7C23BB" stroke="#D4A8F0" stroke-width="2"/>
+<text x="140" y="240" text-anchor="middle" font-family="monospace" font-size="14" fill="#ffffff" opacity="0.9">name</text>
+<rect x="224" y="220" width="64" height="28" rx="8" fill="#7C23BB" stroke="#D4A8F0" stroke-width="2"/>
+<text x="256" y="240" text-anchor="middle" font-family="monospace" font-size="14" fill="#ffffff" opacity="0.9">data</text>
+<rect x="340" y="220" width="64" height="28" rx="8" fill="#7C23BB" stroke="#D4A8F0" stroke-width="2"/>
+<text x="372" y="240" text-anchor="middle" font-family="monospace" font-size="14" fill="#ffffff" opacity="0.9">type</text>
+<line x1="256" y1="248" x2="180" y2="310" stroke="#D4A8F0" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="256" y1="248" x2="256" y2="310" stroke="#D4A8F0" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="256" y1="248" x2="332" y2="310" stroke="#D4A8F0" stroke-width="2.5" stroke-linecap="round"/>
+<rect x="152" y="310" width="56" height="24" rx="6" fill="#6A1FA3" stroke="#B76FE0" stroke-width="1.5"/>
+<rect x="228" y="310" width="56" height="24" rx="6" fill="#6A1FA3" stroke="#B76FE0" stroke-width="1.5"/>
+<rect x="304" y="310" width="56" height="24" rx="6" fill="#6A1FA3" stroke="#B76FE0" stroke-width="1.5"/>
+<text x="180" y="327" text-anchor="middle" font-family="monospace" font-size="12" fill="#ffffff" opacity="0.7">[ 0 ]</text>
+<text x="256" y="327" text-anchor="middle" font-family="monospace" font-size="12" fill="#ffffff" opacity="0.7">[ 1 ]</text>
+<text x="332" y="327" text-anchor="middle" font-family="monospace" font-size="12" fill="#ffffff" opacity="0.7">[ 2 ]</text>
+<line x1="180" y1="334" x2="140" y2="380" stroke="#B76FE0" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+<line x1="180" y1="334" x2="220" y2="380" stroke="#B76FE0" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+<circle cx="140" cy="390" r="10" fill="#350D5E" stroke="#B76FE0" stroke-width="1.5"/>
+<circle cx="220" cy="390" r="10" fill="#350D5E" stroke="#B76FE0" stroke-width="1.5"/>
+<text x="256" y="462" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="46" fill="#ffffff" opacity="0.95" letter-spacing="6">JSON</text>
+</svg>
