@@ -23,9 +23,15 @@
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
     <PackageTags>ETL;Extract-Transform-Load;CSV;CsvHelper</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <ApplicationIcon>..\..\assets\icon.ico</ApplicationIcon>
+    <PackageIcon>icon_256.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\..\assets\icon_256.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Include="..\..\README.md" Condition="Exists('..\..\README.md')">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>

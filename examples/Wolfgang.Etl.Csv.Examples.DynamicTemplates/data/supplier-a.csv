@@ -1,0 +1,8 @@
+Supplier A Price File - Weekly Export
+Generated 2026-05-01
+SKU,Description,Category,Brand,ProductNumber,Cost,Markup,RetailPrice,Discount,MSRP,Notes
+SKU-001,Cordless Drill,Tools,Acme,P-12345,55.00,0.50,82.50,0.00,99.99,Restock weekly
+SKU-002,Saw Blade,Tools,Acme,P-67890,8.00,0.60,12.80,0.00,14.99,
+SKU-003,Tape Measure,Tools,Stanley,P-22222,3.50,0.50,5.25,0.00,6.99,
+SKU-004,Safety Glasses,Safety,3M,P-33333,4.00,0.50,6.00,0.10,7.49,Bundled with helmets
+SKU-005,Work Gloves,Safety,Wells Lamont,P-44444,7.00,0.50,10.50,0.00,12.99,

@@ -1,0 +1,29 @@
+[
+  {
+    "name": "supplier-a",
+    "description": "Supplier A weekly export. Two metadata rows + a header row, then data starting on row 4 with 11 columns.",
+    "csvFile": "data/supplier-a.csv",
+    "startRow": 4,
+    "productNumberColumn": 5,
+    "retailPriceColumn": 8,
+    "msrpColumn": 10
+  },
+  {
+    "name": "supplier-b",
+    "description": "Supplier B compact export. One title row, then data starting on row 2 with 5 columns.",
+    "csvFile": "data/supplier-b.csv",
+    "startRow": 2,
+    "productNumberColumn": 1,
+    "retailPriceColumn": 4,
+    "msrpColumn": 5
+  },
+  {
+    "name": "supplier-c",
+    "description": "Supplier C inverted layout. MSRP in column 1, retail in column 2, product number in column 6. Data starts on row 4.",
+    "csvFile": "data/supplier-c.csv",
+    "startRow": 4,
+    "productNumberColumn": 6,
+    "retailPriceColumn": 2,
+    "msrpColumn": 1
+  }
+]

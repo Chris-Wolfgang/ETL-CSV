@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -29,7 +30,8 @@ namespace Wolfgang.Etl.Csv;
 /// }
 /// </code>
 /// </example>
-public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorProgress>
+public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TRecord>
+    : ExtractorBase<TRecord, CsvExtractorProgress>
     where TRecord : notnull
 {
     private static readonly string OperationName = $"CSV extraction of {typeof(TRecord).Name}";
@@ -186,6 +188,21 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
 
 
     /// <summary>
+    /// Gets or sets a runtime column-map collection that overrides any
+    /// <see cref="CsvColumnAttribute"/> / <see cref="CsvIgnoreAttribute"/> decorations
+    /// on <typeparamref name="TRecord"/>.
+    /// </summary>
+    /// <remarks>
+    /// Use this property when the CSV layout isn't known at compile time — for example
+    /// when the column positions for a record type are loaded from configuration or a
+    /// database "template" row. When non-null and non-empty, the runtime maps are the
+    /// only source of property-to-column bindings; attribute-based mapping is bypassed.
+    /// </remarks>
+    public IReadOnlyList<CsvColumnMap>? ColumnMaps { get; set; }
+
+
+
+    /// <summary>
     /// Gets or sets the number of records to skip before yielding results.
     /// This is an alias for <see cref="ExtractorBase{TSource,TProgress}.SkipItemCount"/>.
     /// </summary>
@@ -305,6 +322,8 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         using var csvReader = new CsvReader(_reader, configuration, LeaveOpen);
 #pragma warning restore CA2007, MA0004
 
+        RegisterRecordMap(csvReader.Context);
+
         await PrepareReaderAsync(csvReader).ConfigureAwait(false);
 
         await foreach (var record in csvReader.GetRecordsAsync<TRecord>(token).WithCancellation(token).ConfigureAwait(false))
@@ -362,6 +381,22 @@ public sealed class CsvExtractor<TRecord> : ExtractorBase<TRecord, CsvExtractorP
         // Use Volatile.Write so the timer thread that calls CreateProgressReport
         // (which uses Volatile.Read on this field) sees a consistent snapshot.
         Volatile.Write(ref _currentLineNumber, csvReader.Context.Parser?.RawRow ?? 0);
+    }
+
+
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory reflects only public properties of TRecord.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory reflects only public properties of TRecord.")]
+    private void RegisterRecordMap(CsvContext context)
+    {
+        var map = ColumnMaps is { Count: > 0 }
+            ? CsvClassMapFactory.BuildFromColumnMaps<TRecord>(ColumnMaps)
+            : CsvClassMapFactory.GetMap<TRecord>();
+
+        if (map is not null)
+        {
+            context.RegisterClassMap(map);
+        }
     }
 
 

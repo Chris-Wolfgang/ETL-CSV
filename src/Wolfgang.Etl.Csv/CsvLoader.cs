@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -25,7 +26,8 @@ namespace Wolfgang.Etl.Csv;
 /// await loader.LoadAsync(items, cancellationToken);
 /// </code>
 /// </example>
-public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
+public sealed class CsvLoader<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TRecord>
+    : LoaderBase<TRecord, CsvLoaderProgress>
     where TRecord : notnull
 {
     private static readonly string OperationName = $"CSV loading of {typeof(TRecord).Name}";
@@ -148,6 +150,20 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
 
 
     /// <summary>
+    /// Gets or sets a runtime column-map collection that overrides any
+    /// <see cref="CsvColumnAttribute"/> / <see cref="CsvIgnoreAttribute"/> decorations
+    /// on <typeparamref name="TRecord"/>.
+    /// </summary>
+    /// <remarks>
+    /// Use this property when the CSV layout isn't known at compile time. When non-null
+    /// and non-empty, the runtime maps are the only source of property-to-column
+    /// bindings; attribute-based mapping is bypassed.
+    /// </remarks>
+    public IReadOnlyList<CsvColumnMap>? ColumnMaps { get; set; }
+
+
+
+    /// <summary>
     /// Gets or sets the number of records to skip before writing.
     /// This is an alias for <see cref="LoaderBase{TDestination,TProgress}.SkipItemCount"/>.
     /// </summary>
@@ -215,6 +231,8 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
         await using var csvWriter = new CsvWriter(_writer, BuildConfiguration(), LeaveOpen);
 #pragma warning restore CA2007, MA0004
 
+        RegisterRecordMap(csvWriter.Context);
+
         if (HasHeaderRecord)
         {
             csvWriter.WriteHeader<TRecord>();
@@ -259,6 +277,22 @@ public sealed class CsvLoader<TRecord> : LoaderBase<TRecord, CsvLoaderProgress>
         // Use Volatile.Write so the timer thread that calls CreateProgressReport
         // (which uses Volatile.Read on this field) sees a consistent snapshot.
         Volatile.Write(ref _currentLineNumber, csvWriter.Row);
+    }
+
+
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory reflects only public properties of TRecord.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "TRecord is annotated with PublicProperties; CsvClassMapFactory reflects only public properties of TRecord.")]
+    private void RegisterRecordMap(CsvContext context)
+    {
+        var map = ColumnMaps is { Count: > 0 }
+            ? CsvClassMapFactory.BuildFromColumnMaps<TRecord>(ColumnMaps)
+            : CsvClassMapFactory.GetMap<TRecord>();
+
+        if (map is not null)
+        {
+            context.RegisterClassMap(map);
+        }
     }
 
 

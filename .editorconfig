@@ -471,6 +471,7 @@ dotnet_diagnostic.SA1602.severity = suggestion
 dotnet_diagnostic.RS0030.severity = none          # Allow banned APIs in examples for demonstration
 
 # Suppress Meziantou, Sonar, and VSTHRD analyzers in examples
+dotnet_diagnostic.CA1849.severity = none          # Allow Console.WriteLine in async demo entry points
 dotnet_diagnostic.CA2007.severity = none
 dotnet_diagnostic.MA0002.severity = none
 dotnet_diagnostic.MA0004.severity = none
