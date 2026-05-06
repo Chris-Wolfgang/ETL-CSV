@@ -1,29 +1,61 @@
-<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-<rect width="512" height="512" rx="80" fill="#350D5E"/>
-<rect x="14" y="14" width="484" height="484" rx="70" fill="#350D5E" stroke="#E8D5F5" stroke-width="1.5"/>
-<circle cx="256" cy="120" r="28" fill="#B76FE0" stroke="#ffffff" stroke-width="3"/>
-<text x="256" y="128" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="28" fill="#ffffff">{ }</text>
-<line x1="256" y1="148" x2="140" y2="220" stroke="#D4A8F0" stroke-width="3" stroke-linecap="round"/>
-<line x1="256" y1="148" x2="256" y2="220" stroke="#D4A8F0" stroke-width="3" stroke-linecap="round"/>
-<line x1="256" y1="148" x2="372" y2="220" stroke="#D4A8F0" stroke-width="3" stroke-linecap="round"/>
-<rect x="108" y="220" width="64" height="28" rx="8" fill="#7C23BB" stroke="#D4A8F0" stroke-width="2"/>
-<text x="140" y="240" text-anchor="middle" font-family="monospace" font-size="14" fill="#ffffff" opacity="0.9">name</text>
-<rect x="224" y="220" width="64" height="28" rx="8" fill="#7C23BB" stroke="#D4A8F0" stroke-width="2"/>
-<text x="256" y="240" text-anchor="middle" font-family="monospace" font-size="14" fill="#ffffff" opacity="0.9">data</text>
-<rect x="340" y="220" width="64" height="28" rx="8" fill="#7C23BB" stroke="#D4A8F0" stroke-width="2"/>
-<text x="372" y="240" text-anchor="middle" font-family="monospace" font-size="14" fill="#ffffff" opacity="0.9">type</text>
-<line x1="256" y1="248" x2="180" y2="310" stroke="#D4A8F0" stroke-width="2.5" stroke-linecap="round"/>
-<line x1="256" y1="248" x2="256" y2="310" stroke="#D4A8F0" stroke-width="2.5" stroke-linecap="round"/>
-<line x1="256" y1="248" x2="332" y2="310" stroke="#D4A8F0" stroke-width="2.5" stroke-linecap="round"/>
-<rect x="152" y="310" width="56" height="24" rx="6" fill="#6A1FA3" stroke="#B76FE0" stroke-width="1.5"/>
-<rect x="228" y="310" width="56" height="24" rx="6" fill="#6A1FA3" stroke="#B76FE0" stroke-width="1.5"/>
-<rect x="304" y="310" width="56" height="24" rx="6" fill="#6A1FA3" stroke="#B76FE0" stroke-width="1.5"/>
-<text x="180" y="327" text-anchor="middle" font-family="monospace" font-size="12" fill="#ffffff" opacity="0.7">[ 0 ]</text>
-<text x="256" y="327" text-anchor="middle" font-family="monospace" font-size="12" fill="#ffffff" opacity="0.7">[ 1 ]</text>
-<text x="332" y="327" text-anchor="middle" font-family="monospace" font-size="12" fill="#ffffff" opacity="0.7">[ 2 ]</text>
-<line x1="180" y1="334" x2="140" y2="380" stroke="#B76FE0" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
-<line x1="180" y1="334" x2="220" y2="380" stroke="#B76FE0" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
-<circle cx="140" cy="390" r="10" fill="#350D5E" stroke="#B76FE0" stroke-width="1.5"/>
-<circle cx="220" cy="390" r="10" fill="#350D5E" stroke="#B76FE0" stroke-width="1.5"/>
-<text x="256" y="462" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="46" fill="#ffffff" opacity="0.95" letter-spacing="6">JSON</text>
+<svg width="512" height="512" viewBox="0 0 512 512"
+     xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Background -->
+  <rect x="16" y="16" width="480" height="480" rx="64" ry="64"
+        fill="#290060"/>
+
+  <!-- White border -->
+  <rect x="32" y="32" width="448" height="448" rx="56" ry="56"
+        fill="none" stroke="#FFFFFF" stroke-width="16"/>
+
+  <!-- Document with folded corner -->
+  <path d="M120 132 H228 L268 172 V280 H120 Z"
+        fill="#FFFFFF"/>
+  <!-- Folded corner triangle -->
+  <path d="M228 132 V172 H268" fill="#290060"/>
+
+  <!-- Grid inside document -->
+  <rect x="140" y="160" width="108" height="96"
+        fill="none" stroke="#290060" stroke-width="6"/>
+  <line x1="176" y1="160" x2="176" y2="256"
+        stroke="#290060" stroke-width="6"/>
+  <line x1="212" y1="160" x2="212" y2="256"
+        stroke="#290060" stroke-width="6"/>
+  <line x1="140" y1="192" x2="248" y2="192"
+        stroke="#290060" stroke-width="6"/>
+  <line x1="140" y1="224" x2="248" y2="224"
+        stroke="#290060" stroke-width="6"/>
+
+  <!-- Arrow -->
+  <line x1="280" y1="208" x2="336" y2="208"
+        stroke="#FFFFFF" stroke-width="16" stroke-linecap="round"/>
+  <polyline points="328,184 360,208 328,232"
+            fill="none" stroke="#FFFFFF" stroke-width="16"
+            stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Database (cylinder) -->
+  <!-- Top ellipse -->
+  <ellipse cx="408" cy="184" rx="52" ry="20"
+           fill="#FFFFFF"/>
+  <!-- Middle band -->
+  <rect x="356" y="184" width="104" height="56"
+        fill="#FFFFFF"/>
+  <ellipse cx="408" cy="240" rx="52" ry="20"
+           fill="#FFFFFF"/>
+  <!-- Bottom band -->
+  <rect x="356" y="240" width="104" height="56"
+        fill="#FFFFFF"/>
+  <ellipse cx="408" cy="296" rx="52" ry="20"
+           fill="#FFFFFF"/>
+
+  <!-- ETL.CSV text -->
+  <text x="256" y="380"
+        text-anchor="middle"
+        fill="#FFFFFF"
+        font-family="Segoe UI, Arial, sans-serif"
+        font-size="64"
+        font-weight="700">
+    ETL.CSV
+  </text>
 </svg>
