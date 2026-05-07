@@ -2,6 +2,11 @@ using System.Text.Json;
 using Wolfgang.Etl.Csv;
 using Wolfgang.Etl.Csv.Examples.DynamicTemplates;
 
+// CA1849 (call async methods in async context) is overly strict for a demo entry
+// point that's chiefly Console.WriteLine output. Async console I/O would obscure
+// what the example is teaching.
+#pragma warning disable CA1849
+
 if (args.Length == 0)
 {
     PrintUsage();

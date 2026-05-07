@@ -271,13 +271,14 @@ public class CsvExtractorTests
 
 
     [Fact]
-    public async Task ExtractAsync_when_BadDataFound_callback_returns_false_propagates()
+    public async Task ExtractAsync_when_BadDataFound_is_set_invokes_callback_and_continues()
     {
         var csv = "FirstName,LastName,Age\r\nAl\"ice,Smith,30\r\n";
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        var observedFields = new List<string?>();
         var sut = new CsvExtractor<PersonRecord>(new StreamReader(stream, Encoding.UTF8))
         {
-            BadDataFound = _ => false,
+            BadDataFound = info => observedFields.Add(info.Field),
         };
 
         var results = new List<PersonRecord>();
@@ -286,6 +287,9 @@ public class CsvExtractorTests
             results.Add(item);
         }
 
+        // The callback fires when bad data is encountered; extraction still completes
+        // and yields the row (CsvHelper recovers and parses what it can).
+        Assert.NotEmpty(observedFields);
         Assert.Single(results);
     }
 

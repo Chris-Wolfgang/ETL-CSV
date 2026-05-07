@@ -110,10 +110,16 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
 
     /// <summary>
     /// Gets or sets a callback invoked when the underlying parser detects bad data.
-    /// Return <c>true</c> to continue processing; <c>false</c> to stop.
-    /// When <c>null</c>, bad data is logged and processing continues.
+    /// Use this to log, count, or quarantine bad records as they're encountered.
+    /// When <c>null</c>, bad data is logged via the configured logger.
     /// </summary>
-    public Func<CsvBadDataInfo, bool>? BadDataFound { get; set; }
+    /// <remarks>
+    /// Extraction always continues after a bad-data event regardless of the callback.
+    /// To abort extraction, throw an exception from the callback (it will propagate
+    /// out of <see cref="ExtractorBase{TSource,TProgress}.ExtractAsync()"/>) or trip
+    /// the <see cref="System.Threading.CancellationToken"/> passed to <c>ExtractAsync</c>.
+    /// </remarks>
+    public Action<CsvBadDataInfo>? BadDataFound { get; set; }
 
 
 

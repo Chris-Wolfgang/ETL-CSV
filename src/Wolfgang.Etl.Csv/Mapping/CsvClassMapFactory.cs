@@ -98,6 +98,11 @@ internal static class CsvClassMapFactory
             throw new ArgumentNullException(nameof(columnMaps));
         }
 
+        if (columnMaps.Count == 0)
+        {
+            throw new ArgumentException("columnMaps must contain at least one entry.", nameof(columnMaps));
+        }
+
         var type = typeof(T);
         var properties = type
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
