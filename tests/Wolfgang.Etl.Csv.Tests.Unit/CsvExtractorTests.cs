@@ -152,7 +152,7 @@ public class CsvExtractorTests
     {
         var csv = "FirstName,LastName,Age\r\nAlice,Smith,30\r\n";
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
-        var reader = new StreamReader(stream, Encoding.UTF8);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
         var sut = new CsvExtractor<PersonRecord>(reader);
 
         await foreach (var _ in sut.ExtractAsync())
