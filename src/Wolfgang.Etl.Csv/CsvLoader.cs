@@ -122,7 +122,11 @@ public sealed class CsvLoader<[DynamicallyAccessedMembers(DynamicallyAccessedMem
     /// Gets or sets a value indicating whether the underlying stream should be left open
     /// after the writer is disposed.
     /// </summary>
-    public bool LeaveOpen { get; set; }
+    /// <remarks>
+    /// Defaults to <c>true</c> because the caller owns the <see cref="StreamWriter"/>
+    /// passed into the constructor.
+    /// </remarks>
+    public bool LeaveOpen { get; set; } = true;
 
 
 

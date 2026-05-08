@@ -158,6 +158,20 @@ public class CsvLoaderTests
 
 
     [Fact]
+    public async Task LoadAsync_default_LeaveOpen_keeps_caller_stream_open()
+    {
+        using var stream = new MemoryStream();
+        var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), 1024, leaveOpen: true);
+        var sut = new CsvLoader<PersonRecord>(writer);
+
+        await sut.LoadAsync(SourceItems.Take(1).ToAsyncEnumerable());
+
+        Assert.True(stream.CanWrite);
+    }
+
+
+
+    [Fact]
     public async Task LoadAsync_writes_header_and_records()
     {
         var stream = new MemoryStream();

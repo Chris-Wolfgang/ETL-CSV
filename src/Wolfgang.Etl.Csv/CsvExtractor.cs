@@ -179,7 +179,11 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// Gets or sets a value indicating whether the underlying stream should be left open
     /// after the parser is disposed.
     /// </summary>
-    public bool LeaveOpen { get; set; }
+    /// <remarks>
+    /// Defaults to <c>true</c> because the caller owns the <see cref="StreamReader"/>
+    /// passed into the constructor.
+    /// </remarks>
+    public bool LeaveOpen { get; set; } = true;
 
 
 

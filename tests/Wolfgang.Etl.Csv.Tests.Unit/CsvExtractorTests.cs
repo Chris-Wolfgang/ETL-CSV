@@ -148,6 +148,24 @@ public class CsvExtractorTests
 
 
     [Fact]
+    public async Task ExtractAsync_default_LeaveOpen_keeps_caller_stream_open()
+    {
+        var csv = "FirstName,LastName,Age\r\nAlice,Smith,30\r\n";
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        var reader = new StreamReader(stream, Encoding.UTF8);
+        var sut = new CsvExtractor<PersonRecord>(reader);
+
+        await foreach (var _ in sut.ExtractAsync())
+        {
+            // drain
+        }
+
+        Assert.True(stream.CanRead);
+    }
+
+
+
+    [Fact]
     public void InitialRecordIndex_when_set_to_zero_throws_ArgumentOutOfRangeException()
     {
         var sut = new CsvExtractor<PersonRecord>(CreateCsvStream(ExpectedItems));
