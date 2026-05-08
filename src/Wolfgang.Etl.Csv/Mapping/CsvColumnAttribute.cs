@@ -35,9 +35,12 @@ public sealed class CsvColumnAttribute : Attribute
 
 
 
-    /// <summary>Initializes a new instance with the specified column name.</summary>
-    /// <param name="name">The CSV column name to bind to.</param>
-    public CsvColumnAttribute(string name)
+    /// <summary>
+    /// Initializes a new instance with the specified column name.
+    /// Pass <c>null</c> to fall back to the property name (same as the parameterless ctor).
+    /// </summary>
+    /// <param name="name">The CSV column name to bind to, or <c>null</c> to use the property name.</param>
+    public CsvColumnAttribute(string? name)
     {
         Name = name;
     }

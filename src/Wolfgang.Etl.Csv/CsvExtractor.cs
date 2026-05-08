@@ -154,9 +154,16 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
 
 
     /// <summary>
-    /// Gets or sets the 1-based index of the first line that contains data.
-    /// Lines before this index are read and discarded.
+    /// Gets or sets the 1-based index of the first line the parser will consume from
+    /// the source. Lines before this index are read and discarded.
     /// </summary>
+    /// <remarks>
+    /// The line at <see cref="InitialRecordIndex"/> is treated as the <i>first line read</i>,
+    /// not necessarily the first data row. When <see cref="HasHeaderRecord"/> is <c>true</c>,
+    /// it becomes the header row (column names); when <see cref="HasHeaderRecord"/> is
+    /// <c>false</c>, it becomes the first data row. Set this to skip metadata or banner
+    /// lines that precede the header / data section.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">value is less than 1.</exception>
     public int InitialRecordIndex
     {
@@ -263,7 +270,7 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
             IgnoreBlankLines = IgnoreBlankLines,
             Quote = Quote,
             ReadingExceptionOccurred = OnReadingExceptionOccurred,
-            TrimOptions = (TrimOptions)(int)TrimOptions,
+            TrimOptions = TrimOptions.ToCsvHelper(),
         };
     }
 

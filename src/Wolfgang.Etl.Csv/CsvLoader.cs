@@ -200,7 +200,7 @@ public sealed class CsvLoader<[DynamicallyAccessedMembers(DynamicallyAccessedMem
             Encoding = Encoding,
             NewLine = NewLine,
             Quote = Quote,
-            TrimOptions = (TrimOptions)(int)TrimOptions,
+            TrimOptions = TrimOptions.ToCsvHelper(),
         };
 
         var callerShouldQuote = ShouldQuote;
