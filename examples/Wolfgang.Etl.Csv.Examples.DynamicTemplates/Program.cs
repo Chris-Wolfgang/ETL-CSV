@@ -2,10 +2,10 @@ using System.Text.Json;
 using Wolfgang.Etl.Csv;
 using Wolfgang.Etl.Csv.Examples.DynamicTemplates;
 
-// CA1849 (call async methods in async context) is overly strict for a demo entry
-// point that's chiefly Console.WriteLine output. Async console I/O would obscure
-// what the example is teaching.
-#pragma warning disable CA1849
+// CA1849 / S6966 (call async methods in async context) and MA0004 (ConfigureAwait)
+// are overly strict for a demo entry point that's chiefly Console.WriteLine output.
+// Async console I/O and ConfigureAwait noise would obscure what the example is teaching.
+#pragma warning disable CA1849, S6966, MA0004
 
 if (args.Length == 0)
 {

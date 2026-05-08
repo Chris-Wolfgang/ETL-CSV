@@ -148,7 +148,7 @@ public class CsvAttributeMappingTests
         }
 
         Assert.Single(results);
-        Assert.Equal(new DateTime(1995, 4, 12), results[0].DateOfBirth);
+        Assert.Equal(new DateTime(1995, 4, 12, 0, 0, 0, DateTimeKind.Utc), results[0].DateOfBirth);
     }
 
 
@@ -172,11 +172,12 @@ public class CsvAttributeMappingTests
         await writer.FlushAsync();
 
         stream.Position = 0;
-        var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var text = await reader.ReadToEndAsync();
 
-        Assert.Contains("first_name,last_name,age", text);
-        Assert.Contains("Alice,Smith,30", text);
-        Assert.DoesNotContain("ComputedDisplayName", text);
+        Assert.Contains("first_name,last_name,age", text, StringComparison.Ordinal);
+        Assert.Contains("Alice,Smith,30", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("ComputedDisplayName", text, StringComparison.Ordinal);
     }
 
 
@@ -245,7 +246,7 @@ public class CsvAttributeMappingTests
 
 
     [Fact]
-    public async Task ExtractAsync_when_runtime_ColumnMaps_names_unknown_property_throws()
+    public Task ExtractAsync_when_runtime_ColumnMaps_names_unknown_property_throws()
     {
         var csv = "x\r\n";
         var sut = new CsvExtractor<PriceRecord>(Reader(csv))
@@ -257,10 +258,11 @@ public class CsvAttributeMappingTests
             },
         };
 
-        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        return Assert.ThrowsAsync<ArgumentException>(async () =>
         {
-            await foreach (var _ in sut.ExtractAsync())
+            await foreach (var _ in sut.ExtractAsync().ConfigureAwait(false))
             {
+                // drain — exception fires before the first record yields
             }
         });
     }
@@ -279,15 +281,16 @@ public class CsvAttributeMappingTests
 
         var items = new List<DateRecord>
         {
-            new() { Name = "Alice", DateOfBirth = new DateTime(1995, 4, 12) },
+            new() { Name = "Alice", DateOfBirth = new DateTime(1995, 4, 12, 0, 0, 0, DateTimeKind.Utc) },
         };
 
         await sut.LoadAsync(items.ToAsyncEnumerable());
         await writer.FlushAsync();
 
         stream.Position = 0;
-        var text = new StreamReader(stream, Encoding.UTF8).ReadToEnd();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var text = await reader.ReadToEndAsync();
 
-        Assert.Contains("1995-04-12", text);
+        Assert.Contains("1995-04-12", text, StringComparison.Ordinal);
     }
 }

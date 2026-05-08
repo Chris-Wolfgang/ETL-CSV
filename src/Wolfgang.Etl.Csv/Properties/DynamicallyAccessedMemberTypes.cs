@@ -9,6 +9,11 @@ namespace System.Diagnostics.CodeAnalysis;
 /// frameworks where the type is internal.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Never)]
+// MA0062 and S4070 flag this enum because PublicConstructors = 0x0003 isn't a clean
+// power of two. That's deliberate — the polyfill must mirror the BCL definition,
+// where PublicConstructors == PublicParameterlessConstructor | 0x0002. The BCL keeps
+// [Flags] for compatibility with linkers that read this attribute by name.
+#pragma warning disable MA0062, S4070
 [Flags]
 internal enum DynamicallyAccessedMemberTypes
 {
@@ -29,5 +34,6 @@ internal enum DynamicallyAccessedMemberTypes
     Interfaces = 0x2000,
     All = -1,
 }
+#pragma warning restore MA0062, S4070
 
 #endif
