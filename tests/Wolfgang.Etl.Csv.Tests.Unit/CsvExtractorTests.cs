@@ -148,8 +148,15 @@ public class CsvExtractorTests
 
 
     [Fact]
-    public async Task ExtractAsync_default_LeaveOpen_keeps_caller_stream_open()
+    public async Task ExtractAsync_keeps_caller_StreamReader_and_underlying_stream_usable()
     {
+        // Tightened from a stream-only assertion: also verify the caller's
+        // StreamReader itself wasn't disposed. The original `stream.CanRead`-only
+        // check could not detect a regression where the extractor disposed the
+        // StreamReader, because the StreamReader was constructed with leaveOpen:true
+        // which prevents disposal from cascading to the underlying stream.
+        // `reader.Peek()` throws ObjectDisposedException if the StreamReader was
+        // disposed, so calling it without expecting a throw asserts liveness.
         var csv = "FirstName,LastName,Age\r\nAlice,Smith,30\r\n";
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
@@ -160,6 +167,11 @@ public class CsvExtractorTests
             // drain
         }
 
+        // StreamReader liveness — implicit assertion via Peek not throwing.
+        var peeked = reader.Peek();
+        Assert.True(peeked == -1 || peeked >= 0);
+
+        // Underlying stream is also still readable.
         Assert.True(stream.CanRead);
     }
 

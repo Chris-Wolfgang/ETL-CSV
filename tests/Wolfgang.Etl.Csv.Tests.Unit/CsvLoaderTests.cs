@@ -158,14 +158,25 @@ public class CsvLoaderTests
 
 
     [Fact]
-    public async Task LoadAsync_default_LeaveOpen_keeps_caller_stream_open()
+    public async Task LoadAsync_keeps_caller_StreamWriter_and_underlying_stream_usable()
     {
+        // Tightened from a stream-only assertion: also verify the caller's
+        // StreamWriter itself wasn't disposed. The original `stream.CanWrite`-only
+        // check could not detect a regression where the loader disposed the
+        // StreamWriter, because the StreamWriter was constructed with leaveOpen:true
+        // which prevents disposal from cascading to the underlying stream.
+        // `writer.Flush()` throws ObjectDisposedException if the StreamWriter was
+        // disposed, so calling it without expecting a throw asserts liveness.
         using var stream = new MemoryStream();
         using var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), 1024, leaveOpen: true);
         var sut = new CsvLoader<PersonRecord>(writer);
 
         await sut.LoadAsync(SourceItems.Take(1).ToAsyncEnumerable());
 
+        // StreamWriter liveness — implicit assertion via Flush not throwing.
+        writer.Flush();
+
+        // Underlying stream is also still writable.
         Assert.True(stream.CanWrite);
     }
 
