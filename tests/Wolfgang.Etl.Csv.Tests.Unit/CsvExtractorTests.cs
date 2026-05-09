@@ -508,7 +508,7 @@ public class CsvExtractorTests
                     // drain
                 }
             }
-        ).ConfigureAwait(false);
+        );
 
         Assert.NotNull(captured);
         Assert.NotNull(captured!.Exception);
