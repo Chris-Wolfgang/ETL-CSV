@@ -512,6 +512,8 @@ public class CsvExtractorTests
 
         Assert.NotNull(captured);
         Assert.NotNull(captured!.Exception);
+        Assert.Equal(2, captured.LineNumber);
+        Assert.Equal(3, captured.ColumnNumber);
         Assert.Equal("Age", captured.ColumnName);
         Assert.Equal("not-a-number", captured.ColumnValue);
     }

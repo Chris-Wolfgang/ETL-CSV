@@ -164,7 +164,17 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
 
 
 
-    /// <summary>Gets or sets the encoding used by the underlying parser.</summary>
+    /// <summary>
+    /// Gets or sets the encoding forwarded to the underlying parser configuration.
+    /// </summary>
+    /// <remarks>
+    /// This value is informational only — it is passed to CsvHelper's
+    /// <c>CsvConfiguration.Encoding</c> but does <b>not</b> control how bytes are
+    /// decoded into characters. Decoding happens inside the <see cref="StreamReader"/>
+    /// supplied to the constructor, and that reader's <see cref="StreamReader.CurrentEncoding"/>
+    /// is authoritative. To read a non-default encoding, construct the
+    /// <see cref="StreamReader"/> with the encoding you want and ignore this property.
+    /// </remarks>
     public Encoding Encoding { get; set; } = Encoding.UTF8;
 
 

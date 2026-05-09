@@ -6,8 +6,14 @@ using BenchmarkDotNet.Attributes;
 
 namespace Wolfgang.Etl.Csv.Benchmarks;
 
+/// <summary>
+/// Measures the GC.GetTotalMemory delta between just before extraction starts and
+/// just after the final record is yielded. This is a "memory pressure" / steady-state
+/// retention proxy, not a true peak — peak transient allocations are reported by
+/// the BenchmarkDotNet <c>MemoryDiagnoser</c> attribute (see "Allocated" column).
+/// </summary>
 [MemoryDiagnoser]
-public class PeakMemoryBenchmarks
+public class MemoryDeltaBenchmarks
 {
     private byte[][] _dataBySize = Array.Empty<byte[]>();
 
@@ -42,7 +48,7 @@ public class PeakMemoryBenchmarks
 
 
     [Benchmark]
-    public async Task<long> Extract_PeakMemory()
+    public async Task<long> Extract_MemoryDelta()
     {
         var before = GC.GetTotalMemory(forceFullCollection: true);
 

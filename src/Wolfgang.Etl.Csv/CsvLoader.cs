@@ -108,7 +108,18 @@ public sealed class CsvLoader<[DynamicallyAccessedMembers(DynamicallyAccessedMem
 
 
 
-    /// <summary>Gets or sets the encoding to be passed to CsvHelper's writer configuration.</summary>
+    /// <summary>
+    /// Gets or sets the encoding forwarded to CsvHelper's writer configuration.
+    /// </summary>
+    /// <remarks>
+    /// This value is informational only — it is passed to CsvHelper's
+    /// <c>CsvConfiguration.Encoding</c> but does <b>not</b> control how characters are
+    /// encoded into bytes on the output stream. Byte encoding is performed by the
+    /// <see cref="StreamWriter"/> supplied to the constructor, and that writer's
+    /// <see cref="StreamWriter.Encoding"/> is authoritative. To write a non-default
+    /// encoding, construct the <see cref="StreamWriter"/> with the encoding you want
+    /// and ignore this property.
+    /// </remarks>
     public Encoding Encoding { get; set; } = Encoding.UTF8;
 
 
