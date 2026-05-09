@@ -111,15 +111,41 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// <summary>
     /// Gets or sets a callback invoked when the underlying parser detects bad data.
     /// Use this to log, count, or quarantine bad records as they're encountered.
-    /// When <c>null</c>, bad data is logged via the configured logger.
     /// </summary>
     /// <remarks>
-    /// Extraction always continues after a bad-data event regardless of the callback.
-    /// To abort extraction, throw an exception from the callback (it will propagate
-    /// out of <see cref="ExtractorBase{TSource,TProgress}.ExtractAsync()"/>) or trip
-    /// the <see cref="System.Threading.CancellationToken"/> passed to <c>ExtractAsync</c>.
+    /// When <c>null</c> (the default), bad data is silently counted via
+    /// <see cref="CsvExtractorProgress.CurrentBadDataCount"/> but not logged — the
+    /// library deliberately does not write CSV record contents to your logger,
+    /// since CSV records frequently contain PII. Wire this to your logger if you
+    /// want diagnostic output, e.g.:
+    /// <code>
+    /// extractor.BadDataFound = info => _logger.LogDebug("Bad CSV data on line {Line}: {Field}", info.LineNumber, info.Field);
+    /// </code>
+    /// Extraction always continues after a bad-data event. To abort, throw from
+    /// the callback or trip the <see cref="System.Threading.CancellationToken"/>
+    /// passed to <c>ExtractAsync</c>.
     /// </remarks>
     public Action<CsvBadDataInfo>? BadDataFound { get; set; }
+
+
+
+    /// <summary>
+    /// Gets or sets a callback invoked when the underlying parser raises a
+    /// recoverable parse exception (typically a type-conversion failure on a
+    /// specific field). Use this to log, count, or send to telemetry.
+    /// </summary>
+    /// <remarks>
+    /// When <c>null</c> (the default), the exception is not logged by the library.
+    /// The exception always propagates out of <c>ExtractAsync</c> regardless of
+    /// the callback — this hook is for observation only. Wrap your <c>await foreach</c>
+    /// in <c>try / catch</c> if you want to swallow individual row failures.
+    /// <code>
+    /// extractor.ReadingExceptionOccurred = info =>
+    ///     _logger.LogDebug(info.Exception, "Parse error on line {Line} column {Col}: {Value}",
+    ///         info.LineNumber, info.ColumnNumber, info.ColumnValue);
+    /// </code>
+    /// </remarks>
+    public Action<CsvReadingExceptionInfo>? ReadingExceptionOccurred { get; set; }
 
 
 
@@ -253,17 +279,7 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
             BadDataFound = args =>
             {
                 _ = Interlocked.Increment(ref _currentBadDataCount);
-                if (callerBadDataFound is not null)
-                {
-                    callerBadDataFound(ToCsvBadDataInfo(args));
-                }
-                else
-                {
-                    // CsvHelper invokes this callback from its parser, so Context.Parser
-                    // is guaranteed non-null here. Using `!` instead of `?.` removes a
-                    // defensive null branch that's unreachable through the public API.
-                    CsvLogMessages.BadDataFound(_logger, args.Context.Parser!.RawRow, args.Field, args.RawRecord, null);
-                }
+                callerBadDataFound?.Invoke(ToCsvBadDataInfo(args));
             },
             Comment = Comment,
             Delimiter = Delimiter,
@@ -300,6 +316,18 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
 
     private bool OnReadingExceptionOccurred(ReadingExceptionOccurredArgs args)
     {
+        // Translate to our parser-agnostic info record only when the caller has
+        // wired a handler. With no handler we just let CsvHelper rethrow — the
+        // exception already carries everything diagnostic via the user's catch
+        // around `await foreach`. Returning true tells CsvHelper to rethrow.
+        ReadingExceptionOccurred?.Invoke(ToCsvReadingExceptionInfo(args));
+        return true;
+    }
+
+
+
+    private static CsvReadingExceptionInfo ToCsvReadingExceptionInfo(ReadingExceptionOccurredArgs args)
+    {
         var ctx = args.Exception.Context;
         var columnIndex = ctx?.Reader?.CurrentIndex ?? -1;
         var headerRecord = ctx?.Reader?.HeaderRecord;
@@ -315,17 +343,16 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
         var columnValue = currentRecord is not null && columnIndex >= 0 && columnIndex < currentRecord.Length
             ? currentRecord[columnIndex]
             : null;
-        CsvLogMessages.ReadingExceptionOccurred
+        var columnNumber = columnIndex >= 0 ? columnIndex + 1 : -1;
+
+        return new CsvReadingExceptionInfo
         (
-            _logger,
-            ctx?.Parser?.Row ?? -1,
             ctx?.Parser?.RawRow ?? -1,
-            columnIndex,
+            columnNumber,
             columnName,
             columnValue,
             args.Exception
         );
-        return true;
     }
 
 

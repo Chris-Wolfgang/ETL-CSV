@@ -104,7 +104,7 @@ That's the full surface for the simplest case. The library auto-maps record prop
 | Encoding control | `Encoding` |
 | `LeaveOpen` semantics matching .NET conventions | `LeaveOpen` |
 | Trim whitespace inside or outside quotes | `TrimOptions` |
-| Custom bad-data and quoting callbacks | `BadDataFound`, `ShouldQuote` |
+| Custom bad-data, parse-error, and quoting callbacks | `BadDataFound`, `ReadingExceptionOccurred`, `ShouldQuote` |
 
 ### Example: Compile-time column mapping with `[CsvColumn]`
 
@@ -164,6 +164,27 @@ await foreach (var person in extractor.ExtractAsync(progress, cancellationToken)
 ```
 
 `ReportingInterval` (inherited from `ExtractorBase`) controls how often progress is sampled.
+
+### Example: Observing bad data and parse errors
+
+The library does **not** log CSV record contents by default — bad-data rows and
+parse exceptions can contain PII. Wire `BadDataFound` and `ReadingExceptionOccurred`
+to your own logger when you want visibility. `LogDebug` is recommended so the raw
+field values only surface when an operator explicitly turns up verbosity:
+
+```csharp
+extractor.BadDataFound = info =>
+    _logger.LogDebug("Bad CSV data on line {Line}: {Field}", info.LineNumber, info.Field);
+
+extractor.ReadingExceptionOccurred = info =>
+    _logger.LogDebug(
+        info.Exception,
+        "Parse error on line {Line}, column '{Column}', value '{Value}'",
+        info.LineNumber, info.ColumnName, info.ColumnValue);
+```
+
+Both callbacks are observation-only — `ReadingExceptionOccurred` does not suppress
+the underlying exception, which still propagates out of `ExtractAsync`.
 
 ---
 

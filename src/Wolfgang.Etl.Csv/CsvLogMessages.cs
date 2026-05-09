@@ -27,23 +27,11 @@ internal static class CsvLogMessages
     internal static readonly Action<ILogger, int, Exception?> IgnoredRow =
         LoggerMessage.Define<int>(LogLevel.Debug, new EventId(12, nameof(IgnoredRow)), "Ignored row {RawRowIndex} before InitialRecordIndex.");
 
-    // Privacy note: the default no-callback log paths could otherwise emit PII from
-    // CSV records into application logs. We mitigate two ways:
-    //   * BadDataFound logs at Debug — production loggers won't capture it unless
-    //     the operator explicitly turns up verbosity. Devs/troubleshooters who
-    //     enable Debug see the raw record for diagnosis. Callers who want louder
-    //     behaviour can set CsvExtractor.BadDataFound and route the events themselves.
-    //   * ReadingExceptionOccurred logs at Warning (it's a recoverable parse error)
-    //     but the format omits {RawRecord} — only row/column metadata and the
-    //     specific bad value are emitted. The raw record can still be inspected
-    //     by setting CsvExtractor.BadDataFound (the bad-data case) or by examining
-    //     the inner exception's CsvHelperException.Context in the caller's catch.
-
-    internal static readonly Action<ILogger, int, string?, string, Exception?> BadDataFound =
-        LoggerMessage.Define<int, string?, string>(LogLevel.Debug, new EventId(13, nameof(BadDataFound)), "Bad data found on raw row {RawRowIndex} with field '{Field}'. Raw record: {RawRecord}.");
-
-    internal static readonly Action<ILogger, int, int, int, string?, string?, Exception?> ReadingExceptionOccurred =
-        LoggerMessage.Define<int, int, int, string?, string?>(LogLevel.Warning, new EventId(14, nameof(ReadingExceptionOccurred)), "Error parsing row {RowIndex} (raw {RawRowIndex}), column index {ColumnIndex} ('{ColumnName}'), value '{ColumnValue}'.");
+    // Note: bad-data and reading-exception events are surfaced to callers via the
+    // CsvExtractor.BadDataFound and CsvExtractor.ReadingExceptionOccurred Action<>
+    // properties rather than being logged by the library. This keeps potentially-
+    // sensitive CSV record contents out of application logs unless the caller
+    // explicitly opts in by wiring those callbacks to their own logger.
 
     internal static readonly Action<ILogger, int, Exception?> LoadedItem =
         LoggerMessage.Define<int>(LogLevel.Debug, new EventId(20, nameof(LoadedItem)), "Loaded item {CurrentItemCount}.");

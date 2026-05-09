@@ -460,13 +460,13 @@ public class CsvExtractorTests
 
 
     [Fact]
-    public Task ExtractAsync_when_type_conversion_fails_invokes_OnReadingExceptionOccurred_handler()
+    public Task ExtractAsync_when_type_conversion_fails_propagates_TypeConverterException()
     {
         // "not-a-number" cannot be converted to int for the Age column.
-        // CsvHelper raises this through OnReadingExceptionOccurred (the handler logs
-        // diagnostics and returns true), but CsvHelper still propagates the exception
-        // via the async iterator. We only need to assert the handler ran — covered
-        // implicitly by the propagated exception type.
+        // CsvHelper raises this through OnReadingExceptionOccurred; our handler
+        // returns true so CsvHelper still propagates the exception via the async
+        // iterator. This test asserts the propagation path; the companion test
+        // below asserts the public ReadingExceptionOccurred callback fires.
         var csv = "FirstName,LastName,Age\r\nBob,Jones,not-a-number\r\n";
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
         var sut = new CsvExtractor<PersonRecord>(new StreamReader(stream, Encoding.UTF8));
@@ -481,5 +481,38 @@ public class CsvExtractorTests
                 }
             }
         );
+    }
+
+
+
+    [Fact]
+    public async Task ExtractAsync_when_type_conversion_fails_invokes_ReadingExceptionOccurred_callback()
+    {
+        // The public ReadingExceptionOccurred callback should fire with a populated
+        // CsvReadingExceptionInfo whenever CsvHelper raises a parse exception. The
+        // exception still propagates after the callback returns — the callback is
+        // purely for observation/logging.
+        var csv = "FirstName,LastName,Age\r\nBob,Jones,not-a-number\r\n";
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        var sut = new CsvExtractor<PersonRecord>(new StreamReader(stream, Encoding.UTF8));
+
+        CsvReadingExceptionInfo? captured = null;
+        sut.ReadingExceptionOccurred = info => captured = info;
+
+        await Assert.ThrowsAsync<CsvHelper.TypeConversion.TypeConverterException>
+        (
+            async () =>
+            {
+                await foreach (var _ in sut.ExtractAsync().ConfigureAwait(false))
+                {
+                    // drain
+                }
+            }
+        ).ConfigureAwait(false);
+
+        Assert.NotNull(captured);
+        Assert.NotNull(captured!.Exception);
+        Assert.Equal("Age", captured.ColumnName);
+        Assert.Equal("not-a-number", captured.ColumnValue);
     }
 }
