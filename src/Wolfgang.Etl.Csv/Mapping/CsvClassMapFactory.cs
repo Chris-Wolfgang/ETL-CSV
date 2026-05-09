@@ -123,14 +123,16 @@ internal static class CsvClassMapFactory
 
             var memberMap = map.Map(prop.DeclaringType ?? prop.ReflectedType!, prop);
 
-            if (!string.IsNullOrEmpty(col.Name))
-            {
-                memberMap.Name(col.Name!);
-            }
-
+            // Index takes precedence over Name. Per CsvColumnMap.Name's docstring,
+            // Name is ignored when Index is non-negative. Apply only one binding
+            // path to avoid CsvHelper getting an ambiguous configuration.
             if (col.Index >= 0)
             {
                 memberMap.Index(col.Index);
+            }
+            else if (!string.IsNullOrEmpty(col.Name))
+            {
+                memberMap.Name(col.Name!);
             }
 
             if (col.Optional)
@@ -172,14 +174,14 @@ internal static class CsvClassMapFactory
         var memberMap = map.MemberMaps.FirstOrDefault(mm => mm.Data.Member == prop)
                         ?? map.Map(prop.DeclaringType ?? prop.ReflectedType!, prop);
 
-        if (!string.IsNullOrEmpty(col.Name))
-        {
-            memberMap.Name(col.Name!);
-        }
-
+        // Index takes precedence over Name (matches CsvColumnAttribute.Name's docstring).
         if (col.Index >= 0)
         {
             memberMap.Index(col.Index);
+        }
+        else if (!string.IsNullOrEmpty(col.Name))
+        {
+            memberMap.Name(col.Name!);
         }
 
         if (col.Optional)

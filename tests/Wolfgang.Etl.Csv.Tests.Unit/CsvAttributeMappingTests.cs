@@ -148,7 +148,7 @@ public class CsvAttributeMappingTests
         }
 
         Assert.Single(results);
-        Assert.Equal(new DateTime(1995, 4, 12, 0, 0, 0, DateTimeKind.Utc), results[0].DateOfBirth);
+        Assert.Equal(new DateTime(1995, 4, 12, 0, 0, 0, DateTimeKind.Unspecified), results[0].DateOfBirth);
     }
 
 
@@ -281,7 +281,7 @@ public class CsvAttributeMappingTests
 
         var items = new List<DateRecord>
         {
-            new() { Name = "Alice", DateOfBirth = new DateTime(1995, 4, 12, 0, 0, 0, DateTimeKind.Utc) },
+            new() { Name = "Alice", DateOfBirth = new DateTime(1995, 4, 12, 0, 0, 0, DateTimeKind.Unspecified) },
         };
 
         await sut.LoadAsync(items.ToAsyncEnumerable());

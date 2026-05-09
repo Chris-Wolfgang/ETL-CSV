@@ -173,8 +173,8 @@ public class CsvLoaderTests
 
         await sut.LoadAsync(SourceItems.Take(1).ToAsyncEnumerable());
 
-        // StreamWriter liveness — implicit assertion via Flush not throwing.
-        writer.Flush();
+        // StreamWriter liveness — implicit assertion via FlushAsync not throwing.
+        await writer.FlushAsync();
 
         // Underlying stream is also still writable.
         Assert.True(stream.CanWrite);
