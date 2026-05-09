@@ -343,15 +343,32 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
 
         await PrepareReaderAsync(csvReader).ConfigureAwait(false);
 
-        await foreach (var record in csvReader.GetRecordsAsync<TRecord>(token).WithCancellation(token).ConfigureAwait(false))
+        // Manual ReadAsync / GetRecord loop instead of GetRecordsAsync so we can check
+        // MaximumItemCount BEFORE materializing the next row. With GetRecordsAsync the
+        // (N+1)th row would be parsed and type-converted (firing BadDataFound and
+        // ReadingExceptionOccurred for it) before the limit check could stop us, and
+        // MaximumItemCount = 0 would still consume one record.
+        while (true)
         {
             token.ThrowIfCancellationRequested();
-            UpdateLineNumber(csvReader);
 
             if (CurrentItemCount >= MaximumItemCount)
             {
                 CsvLogMessages.ReachedMaximumItemCount(_logger, MaximumItemCount, null);
                 yield break;
+            }
+
+            if (!await csvReader.ReadAsync().ConfigureAwait(false))
+            {
+                break;
+            }
+
+            UpdateLineNumber(csvReader);
+
+            var record = csvReader.GetRecord<TRecord>();
+            if (record is null)
+            {
+                continue;
             }
 
             IncrementCurrentItemCount();

@@ -33,7 +33,7 @@ public class DateTimeBenchmarks
         sb.AppendLine("first_name,last_name,birth_date,zip_code");
         for (var i = 0; i < RecordCount; i++)
         {
-            var dob = new DateTime(1980, 1, 1).AddDays(i % 10000);
+            var dob = new DateTime(1980, 1, 1, 0, 0, 0, DateTimeKind.Unspecified).AddDays(i % 10000);
             _records[i] = new BenchmarkRecordWithDate
             {
                 FirstName = "John",

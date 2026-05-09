@@ -281,6 +281,36 @@ public class CsvExtractorTests
 
 
     [Fact]
+    public async Task ExtractAsync_when_MaximumItemCount_reached_does_not_invoke_BadDataFound_for_subsequent_rows()
+    {
+        // Bad data on row 2 (after the header). With MaximumItemCount = 1, we should
+        // yield exactly one record and the BadDataFound callback should NOT fire for
+        // any row beyond the limit. Regression test for the prior implementation that
+        // used GetRecordsAsync, which materialized one extra row before the limit
+        // check could stop us.
+        var csv = "FirstName,LastName,Age\r\nAlice,Smith,30\r\nBo\"b,Jones,25\r\n";
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        var badDataFires = 0;
+        var sut = new CsvExtractor<PersonRecord>(new StreamReader(stream, Encoding.UTF8))
+        {
+            MaximumItemCount = 1,
+            BadDataFound = _ => { badDataFires++; },
+        };
+
+        var results = new List<PersonRecord>();
+        await foreach (var item in sut.ExtractAsync())
+        {
+            results.Add(item);
+        }
+
+        Assert.Single(results);
+        Assert.Equal("Alice", results[0].FirstName);
+        Assert.Equal(0, badDataFires);   // never read past the limit, so the bad row never fires
+    }
+
+
+
+    [Fact]
     public async Task ExtractAsync_increments_CurrentBadDataCount_for_each_bad_data_event()
     {
         var csv = "FirstName,LastName,Age\r\nAl\"ice,Smith,30\r\nBo\"b,Jones,25\r\n";
