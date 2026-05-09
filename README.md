@@ -61,18 +61,27 @@ await foreach (var person in extractor.ExtractAsync(cancellationToken))
 
 ### Writing a CSV
 
+`CsvLoader<T>.LoadAsync` takes an `IAsyncEnumerable<T>`. If you already have one
+(e.g. piped from another extractor), pass it directly. Otherwise, define a tiny
+async iterator method to yield your records:
+
 ```csharp
 using var writer = new StreamWriter("people.csv");
 var loader = new CsvLoader<Person>(writer);
 
-var people = new[]
-{
-    new Person { FirstName = "Alice", LastName = "Smith", Age = 30 },
-    new Person { FirstName = "Bob",   LastName = "Jones", Age = 25 },
-}.ToAsyncEnumerable();
+await loader.LoadAsync(GetPeopleAsync(), cancellationToken);
 
-await loader.LoadAsync(people, cancellationToken);
+static async IAsyncEnumerable<Person> GetPeopleAsync()
+{
+    yield return new Person { FirstName = "Alice", LastName = "Smith", Age = 30 };
+    yield return new Person { FirstName = "Bob",   LastName = "Jones", Age = 25 };
+    await Task.CompletedTask;   // satisfies the async signature
+}
 ```
+
+> **Tip:** if you prefer `someCollection.ToAsyncEnumerable()` (used elsewhere in
+> this README's examples), add the [`System.Linq.Async`](https://www.nuget.org/packages/System.Linq.Async)
+> package — it's a drop-in helper not included in the BCL.
 
 That's the full surface for the simplest case. The library auto-maps record properties to CSV columns by name; everything below is opt-in.
 
