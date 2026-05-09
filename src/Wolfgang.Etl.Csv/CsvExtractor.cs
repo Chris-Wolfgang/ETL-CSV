@@ -259,7 +259,10 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
                 }
                 else
                 {
-                    CsvLogMessages.BadDataFound(_logger, args.Context.Parser?.RawRow ?? -1, args.Field, args.RawRecord, null);
+                    // CsvHelper invokes this callback from its parser, so Context.Parser
+                    // is guaranteed non-null here. Using `!` instead of `?.` removes a
+                    // defensive null branch that's unreachable through the public API.
+                    CsvLogMessages.BadDataFound(_logger, args.Context.Parser!.RawRow, args.Field, args.RawRecord, null);
                 }
             },
             Comment = Comment,
@@ -278,12 +281,15 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
 
     private static CsvBadDataInfo ToCsvBadDataInfo(BadDataFoundArgs args)
     {
-        var rawColumnIndex = args.Context.Reader?.CurrentIndex ?? -1;
+        // CsvHelper invokes BadDataFound from its parser/reader chain, so Context.Reader
+        // and Context.Parser are guaranteed non-null here. Using `!` instead of `?.`
+        // removes defensive null branches that are unreachable through the public API.
+        var rawColumnIndex = args.Context.Reader!.CurrentIndex;
         var columnNumber = rawColumnIndex >= 0 ? rawColumnIndex + 1 : -1;
 
         return new CsvBadDataInfo
         (
-            args.Context.Parser?.RawRow ?? -1,
+            args.Context.Parser!.RawRow,
             columnNumber,
             args.Field,
             args.RawRecord
@@ -414,7 +420,9 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
     {
         // Use Volatile.Write so the timer thread that calls CreateProgressReport
         // (which uses Volatile.Read on this field) sees a consistent snapshot.
-        Volatile.Write(ref _currentLineNumber, csvReader.Context.Parser?.RawRow ?? 0);
+        // Context.Parser is guaranteed non-null here — UpdateLineNumber is only
+        // called after a successful ReadAsync(), which sets the Parser.
+        Volatile.Write(ref _currentLineNumber, csvReader.Context.Parser!.RawRow);
     }
 
 

@@ -133,6 +133,22 @@ public class CsvExtractorTests
 
 
     [Fact]
+    public void Internal_constructor_when_streamReader_is_null_throws_ArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>
+        (
+            () => new CsvExtractor<PersonRecord>
+            (
+                null!,
+                NullLogger<CsvExtractor<PersonRecord>>.Instance,
+                new ManualProgressTimer()
+            )
+        );
+    }
+
+
+
+    [Fact]
     public void Internal_constructor_when_logger_is_null_does_not_throw()
     {
         var sut = new CsvExtractor<PersonRecord>

@@ -140,6 +140,22 @@ public class CsvLoaderTests
 
 
     [Fact]
+    public void Internal_constructor_when_streamWriter_is_null_throws_ArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>
+        (
+            () => new CsvLoader<PersonRecord>
+            (
+                null!,
+                NullLogger<CsvLoader<PersonRecord>>.Instance,
+                new ManualProgressTimer()
+            )
+        );
+    }
+
+
+
+    [Fact]
     public void Internal_constructor_when_logger_is_null_does_not_throw()
     {
         var stream = new MemoryStream();
