@@ -68,9 +68,17 @@ internal static class CsvClassMapFactory
         var map = new DefaultClassMap<T>();
         map.AutoMap(System.Globalization.CultureInfo.CurrentCulture);
 
+        // Index AutoMap's MemberMaps by MemberInfo once so ApplyAttributes can do
+        // O(1) lookups instead of an O(N) FirstOrDefault per property — keeping
+        // overall map construction O(N) instead of O(N^2) for wide records.
+        // MemberMap.Data.Member is typed as MemberInfo? but is always set for entries
+        // produced by AutoMap (it's the property/field the map binds to). The
+        // null-forgiving operator is safe here.
+        var memberMapsByMember = map.MemberMaps.ToDictionary(mm => mm.Data.Member!);
+
         foreach (var prop in properties)
         {
-            ApplyAttributes(map, prop);
+            ApplyAttributes(map, memberMapsByMember, prop);
         }
 
         return map;
@@ -156,12 +164,19 @@ internal static class CsvClassMapFactory
 
 
 
-    private static void ApplyAttributes(ClassMap map, PropertyInfo prop)
+    private static void ApplyAttributes
+    (
+        ClassMap map,
+        IReadOnlyDictionary<MemberInfo, MemberMap> memberMapsByMember,
+        PropertyInfo prop
+    )
     {
         if (prop.IsDefined(typeof(CsvIgnoreAttribute), inherit: true))
         {
-            var existing = map.MemberMaps.FirstOrDefault(mm => mm.Data.Member == prop);
-            existing?.Ignore();
+            if (memberMapsByMember.TryGetValue(prop, out var existing))
+            {
+                existing.Ignore();
+            }
             return;
         }
 
@@ -171,8 +186,9 @@ internal static class CsvClassMapFactory
             return;
         }
 
-        var memberMap = map.MemberMaps.FirstOrDefault(mm => mm.Data.Member == prop)
-                        ?? map.Map(prop.DeclaringType ?? prop.ReflectedType!, prop);
+        var memberMap = memberMapsByMember.TryGetValue(prop, out var existingMap)
+            ? existingMap
+            : map.Map(prop.DeclaringType ?? prop.ReflectedType!, prop);
 
         // Index takes precedence over Name (matches CsvColumnAttribute.Name's docstring).
         if (col.Index >= 0)

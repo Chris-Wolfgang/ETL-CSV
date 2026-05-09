@@ -323,7 +323,6 @@ public sealed class CsvExtractor<[DynamicallyAccessedMembers(DynamicallyAccessed
             columnIndex,
             columnName,
             columnValue,
-            ctx?.Parser?.RawRecord ?? string.Empty,
             args.Exception
         );
         return true;
