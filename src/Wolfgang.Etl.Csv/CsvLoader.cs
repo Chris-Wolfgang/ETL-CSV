@@ -224,10 +224,8 @@ public sealed class CsvLoader<[DynamicallyAccessedMembers(DynamicallyAccessedMem
         CancellationToken token
     )
     {
-        if (items is null)
-        {
-            throw new ArgumentNullException(nameof(items));
-        }
+        // LoaderBase null-checks `items` in all public LoadAsync overloads before
+        // invoking this worker, so a null is unreachable here.
 
         CsvLogMessages.StartingOperation(_logger, OperationName, null);
 

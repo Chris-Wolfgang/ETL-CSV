@@ -25,6 +25,39 @@ public class CsvAttributeMappingTests
 
 
     [ExcludeFromCodeCoverage]
+    public sealed record PartiallyAttributedRecord
+    {
+        [CsvColumn(Name = "first_name")]
+        public string FirstName { get; set; } = string.Empty;
+
+        // No CsvColumn or CsvIgnore — falls through ApplyAttributes' early return.
+        public string LastName { get; set; } = string.Empty;
+    }
+
+
+
+    [Fact]
+    public async Task ExtractAsync_when_record_has_unattributed_property_uses_default_AutoMap_for_it()
+    {
+        // FirstName is attribute-mapped to "first_name"; LastName has no attribute,
+        // so AutoMap's default by-property-name binding is preserved.
+        var csv = "first_name,LastName\r\nAlice,Smith\r\n";
+        var sut = new CsvExtractor<PartiallyAttributedRecord>(Reader(csv));
+
+        var results = new List<PartiallyAttributedRecord>();
+        await foreach (var item in sut.ExtractAsync())
+        {
+            results.Add(item);
+        }
+
+        Assert.Single(results);
+        Assert.Equal("Alice", results[0].FirstName);
+        Assert.Equal("Smith", results[0].LastName);
+    }
+
+
+
+    [ExcludeFromCodeCoverage]
     public sealed record OptionalRecord
     {
         [CsvColumn(Name = "first_name")]
@@ -219,6 +252,87 @@ public class CsvAttributeMappingTests
         Assert.Equal(9.99m, results[0].RetailPrice);
         Assert.Equal(14.50m, results[0].MSRP);
         Assert.Equal("P-67890", results[1].ProductNumber);
+    }
+
+
+
+    [Fact]
+    public async Task ExtractAsync_when_runtime_ColumnMap_uses_Name_and_Index_negative_binds_by_header_name()
+    {
+        // Index defaults to -1, so the binding falls through to Name.
+        var csv = "alpha,beta,gamma\r\nP-12345,9.99,14.50\r\n";
+        var sut = new CsvExtractor<PriceRecord>(Reader(csv))
+        {
+            ColumnMaps = new[]
+            {
+                new CsvColumnMap(nameof(PriceRecord.ProductNumber)) { Name = "alpha" },
+                new CsvColumnMap(nameof(PriceRecord.RetailPrice))   { Name = "beta" },
+                new CsvColumnMap(nameof(PriceRecord.MSRP))          { Name = "gamma" },
+            },
+        };
+
+        var results = new List<PriceRecord>();
+        await foreach (var item in sut.ExtractAsync())
+        {
+            results.Add(item);
+        }
+
+        Assert.Single(results);
+        Assert.Equal("P-12345", results[0].ProductNumber);
+        Assert.Equal(9.99m, results[0].RetailPrice);
+        Assert.Equal(14.50m, results[0].MSRP);
+    }
+
+
+
+    [Fact]
+    public async Task ExtractAsync_when_runtime_ColumnMap_Optional_is_true_skips_missing_column()
+    {
+        // The middle_name column is missing from the file.
+        var csv = "first_name\r\nAlice\r\n";
+        var sut = new CsvExtractor<OptionalRecord>(Reader(csv))
+        {
+            ColumnMaps = new[]
+            {
+                new CsvColumnMap(nameof(OptionalRecord.FirstName))  { Name = "first_name" },
+                new CsvColumnMap(nameof(OptionalRecord.MiddleName)) { Name = "middle_name", Optional = true, Default = "(none)" },
+            },
+        };
+
+        var results = new List<OptionalRecord>();
+        await foreach (var item in sut.ExtractAsync())
+        {
+            results.Add(item);
+        }
+
+        Assert.Single(results);
+        Assert.Equal("Alice", results[0].FirstName);
+        Assert.Equal("(none)", results[0].MiddleName);
+    }
+
+
+
+    [Fact]
+    public async Task ExtractAsync_when_runtime_ColumnMap_Format_is_specified_parses_using_format()
+    {
+        var csv = "name,dob\r\nAlice,1995-04-12\r\n";
+        var sut = new CsvExtractor<DateRecord>(Reader(csv))
+        {
+            ColumnMaps = new[]
+            {
+                new CsvColumnMap(nameof(DateRecord.Name))        { Name = "name" },
+                new CsvColumnMap(nameof(DateRecord.DateOfBirth)) { Name = "dob", Format = "yyyy-MM-dd" },
+            },
+        };
+
+        var results = new List<DateRecord>();
+        await foreach (var item in sut.ExtractAsync())
+        {
+            results.Add(item);
+        }
+
+        Assert.Single(results);
+        Assert.Equal(new DateTime(1995, 4, 12, 0, 0, 0, DateTimeKind.Unspecified), results[0].DateOfBirth);
     }
 
 
