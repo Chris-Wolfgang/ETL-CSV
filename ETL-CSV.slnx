@@ -41,9 +41,17 @@
     <File Path="scripts/Setup-Labels.ps1" />
     <File Path="scripts/setup.ps1" />
   </Folder>
-  <Folder Name="/benchmarks/" />
-  <Folder Name="/examples/" />
-  <Folder Name="/src/" />
-  <Folder Name="/tests/" />
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Wolfgang.Etl.Csv.Benchmarks/Wolfgang.Etl.Csv.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/examples/">
+    <Project Path="examples/Wolfgang.Etl.Csv.Examples.DynamicTemplates/Wolfgang.Etl.Csv.Examples.DynamicTemplates.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Wolfgang.Etl.Csv/Wolfgang.Etl.Csv.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Wolfgang.Etl.Csv.Tests.Unit/Wolfgang.Etl.Csv.Tests.Unit.csproj" />
+  </Folder>
 </Solution>
 
